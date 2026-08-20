@@ -1,0 +1,37 @@
+@import 'animate.css';
+
+@font-face { font-family: 'Coolvetica'; src: url('./assets/fonts/CoolveticaRg-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Helvetica Neue'; src: url('./assets/fonts/helvetica-neu.ttf') format('truetype'); }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #10151b; color: #eef3f0; font: 300 16px/1.6 'Helvetica Neue', Arial, sans-serif; }
+.page { margin-left: 76px; min-height: 100vh; overflow: hidden; background: radial-gradient(ellipse at bottom, #1b3030 0%, #10151b 66%); }
+.portfolio-section { position: relative; z-index: 1; min-height: 100vh; padding: 110px clamp(28px, 9vw, 150px); display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid rgba(0,255,127,.14); }
+.section-heading { display: flex; align-items: baseline; gap: 18px; margin-bottom: 28px; }
+.section-heading span, .eyebrow, .card-kicker { color: #00ff9d; letter-spacing: .18em; font-size: 12px; font-weight: 600; }
+.section-heading h2 { font: 400 clamp(50px, 7vw, 80px)/1 'Coolvetica', sans-serif; color: #fff; margin: 0; }
+.section-intro { color: #c3d3ce; max-width: 600px; margin: -10px 0 38px; font-size: 18px; }
+.flat-button { display: inline-flex; align-items: center; gap: 8px; width: fit-content; border: 1px solid #00ff9d; color: #00ff9d; background: transparent; padding: 12px 18px; text-decoration: none; letter-spacing: .12em; font-size: 12px; cursor: pointer; transition: .25s ease; }
+.flat-button:hover:not(:disabled) { background: #00ff9d; color: #10151b; }
+.flat-button:disabled { cursor: not-allowed; border-color: #6d8079; color: #6d8079; }
+
+.hero-section { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: clamp(40px, 7vw, 110px); align-items: center; }
+.hero-copy h1 { font: 400 clamp(55px, 7.2vw, 108px)/.95 'Coolvetica', sans-serif; margin: 18px 0 28px; max-width: 900px; color: #fff; }
+.hero-summary { max-width: 660px; color: #c3d3ce; font-size: clamp(18px, 2vw, 23px); margin-bottom: 36px; }
+.portrait-space { justify-self: end; width: min(100%, 380px); }.portrait-frame { width: 100%; aspect-ratio: .78; overflow: hidden; border: 1px solid rgba(0, 255, 157, .55); border-radius: 3px; background: #17211e; box-shadow: 18px 18px 0 rgba(0, 255, 157, .08); }.portrait-frame img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; filter: saturate(.88) contrast(1.04); }.portrait-space p { margin: 22px 0 0; color: #00ff9d; font: 400 17px/1.25 'Coolvetica'; letter-spacing: .08em; }
+.section-content { max-width: 760px; font-size: clamp(19px, 2.1vw, 25px); color: #d7e1dd; }
+.section-content p { margin: 0 0 26px; }
+
+.timeline { max-width: 920px; border-left: 1px solid #00ff9d; margin: 15px 0 0 18px; padding-left: 48px; }
+.timeline-item { position: relative; padding: 0 0 55px; }
+.timeline-marker { position: absolute; left: -64px; top: 3px; width: 31px; height: 31px; border: 1px solid #00ff9d; border-radius: 50%; display: grid; place-items: center; background: #10151b; color: #00ff9d; }
+.timeline-date { color: #00ff9d; font-size: 13px; letter-spacing: .1em; margin: 0 0 5px; }.timeline-content h3 { font: 400 34px/1 'Coolvetica'; margin: 0; }.timeline-content h4 { font-size: 16px; color: #c3d3ce; margin: 7px 0; }.timeline-content p:last-child { max-width: 620px; color: #c3d3ce; }
+
+.flip-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 25px; }.flip-card { min-height: 360px; perspective: 1000px; }.flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 360px; transition: transform .7s; transform-style: preserve-3d; }.flip-card:hover .flip-card-inner, .flip-card:focus-within .flip-card-inner { transform: rotateY(180deg); }.flip-face { position: absolute; inset: 0; padding: 30px; border: 1px solid rgba(0,255,157,.35); background: rgba(19,35,35,.9); backface-visibility: hidden; display: flex; flex-direction: column; border-radius: 8px; }.flip-face h3 { margin: 12px 0; font: 400 32px/1 'Coolvetica'; }.flip-face p { color: #c3d3ce; }.technologies { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }.tech-tag, .skill-badges span { border: 1px solid rgba(0,255,157,.4); color: #bfffe2; padding: 5px 9px; font-size: 12px; border-radius: 20px; }.flip-hint { margin-top: 22px; font-size: 12px; color: #00ff9d; }.flip-back { transform: rotateY(180deg); justify-content: center; }.dashboard-modal { position: fixed; z-index: 10; inset: 0; background: rgba(0,0,0,.75); display: grid; place-items: center; padding: 30px; }.modal-panel { position: relative; width: min(1100px, 100%); height: min(760px, 88vh); background: #14211f; padding: 28px; }.modal-panel h3 { font: 400 28px 'Coolvetica'; margin: 0 0 16px; }.modal-panel iframe { width: 100%; height: calc(100% - 60px); border: 0; background: #fff; }.modal-close { position: absolute; right: 12px; top: 9px; background: none; color: #fff; border: 0; font-size: 22px; cursor: pointer; }.embed-fallback { color: #fff; }
+
+.skill-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }.tagcloud-wrap { position: absolute; right: 7%; top: 50%; transform: translateY(-50%); color: #00ff9d; }.tagcloud-wrap .tagcloud { font-family: 'Coolvetica', sans-serif; font-size: 21px; }
+.contact-links { display: grid; gap: 14px; max-width: 620px; }.contact-links a { display: flex; align-items: center; gap: 14px; padding: 17px 20px; color: #fff; text-decoration: none; border: 1px solid rgba(0,255,157,.3); background: rgba(19,35,35,.55); transition: .2s; }.contact-links a:hover { border-color: #00ff9d; }.contact-links svg { color: #00ff9d; font-size: 22px; }.contact-links span { color: #a5b8b1; margin-left: auto; }
+
+@media (max-width: 900px) { .hero-section { grid-template-columns: 1fr; }.portrait-space { justify-self: start; width: min(280px, 100%); }.flip-grid { grid-template-columns: 1fr; }.tagcloud-wrap { position: relative; right: auto; top: auto; transform: none; margin-top: 40px; }.skills-page .text-zone { width: 100%; } }
+@media (max-width: 600px) { .page { margin-left: 48px; }.portfolio-section { padding: 80px 24px; min-height: auto; }.nav-bar { width: 48px; }.nav-bar nav a { height: 43px !important; line-height: 43px !important; }.nav-bar .logo { font-size: 13px; }.nav-bar nav a span { display: none; }.hero-section { min-height: 100vh; }.pipeline-visual span { min-width: auto; font-size: 15px; }.contact-links span { font-size: 11px; }.timeline { padding-left: 34px; }.timeline-marker { left: -50px; } }
