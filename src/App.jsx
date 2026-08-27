@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { useFactory } from './store.js';
-import { useDeviceTier, usePointer } from './hooks.js';
+import { useDeviceTier } from './hooks.js';
 import HUD from './ui/HUD.jsx';
 import Fallback from './ui/Fallback.jsx';
 
@@ -11,7 +11,6 @@ const Scene = lazy(() => import('./scene/Scene.jsx'));
 
 export default function App() {
   const tier = useDeviceTier();
-  const pointer = usePointer();
   const calm = useFactory((s) => s.calmMode);
   const section = useFactory((s) => s.section);
 
@@ -22,7 +21,7 @@ export default function App() {
           <Fallback section={section} />
         ) : (
           <Suspense fallback={null}>
-            <Scene tier={tier} pointer={pointer} />
+            <Scene tier={tier} />
           </Suspense>
         )}
       </div>

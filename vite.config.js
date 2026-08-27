@@ -17,7 +17,10 @@ export default defineConfig({
       output: {
         manualChunks: {
           three: ['three'],
-          r3f: ['@react-three/fiber', '@react-three/drei', '@react-three/postprocessing', 'postprocessing'],
+          r3f: ['@react-three/fiber', '@react-three/drei'],
+          // postprocessing is only needed for the bloom/vignette pass — keep it
+          // in its own chunk so it downloads in parallel with the rest.
+          postfx: ['@react-three/postprocessing', 'postprocessing'],
         },
       },
     },

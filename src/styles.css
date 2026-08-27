@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Fonts are loaded via <link rel="preconnect"> + <link rel="stylesheet"> in
+   index.html so they fetch in parallel with this stylesheet instead of being
+   discovered only after it parses. */
 
 /* ===========================================================================
    TOKENS

@@ -46,8 +46,9 @@ export function useDeviceTier() {
   return tier;
 }
 
-// Smooth pointer position in normalised [-1, 1] space, lerped for lag.
-// Feeds a subtle camera parallax in the 3D scene. No-ops on touch devices.
+// Pointer position in normalised [-1, 1] space. `tx/ty` is the live target;
+// the scene's frame loop eases `x/y` toward it (parallax lag) so the smoothing
+// runs on the same clock as the render and stops when it does. Touch: no-op.
 export function usePointer() {
   const pointer = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
   useEffect(() => {
@@ -56,19 +57,8 @@ export function usePointer() {
       pointer.current.tx = (e.clientX / window.innerWidth) * 2 - 1;
       pointer.current.ty = (e.clientY / window.innerHeight) * 2 - 1;
     };
-    let raf;
-    const tick = () => {
-      const p = pointer.current;
-      p.x += (p.tx - p.x) * 0.08;
-      p.y += (p.ty - p.y) * 0.08;
-      raf = requestAnimationFrame(tick);
-    };
     window.addEventListener('pointermove', onMove);
-    tick();
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      cancelAnimationFrame(raf);
-    };
+    return () => window.removeEventListener('pointermove', onMove);
   }, []);
   return pointer;
 }

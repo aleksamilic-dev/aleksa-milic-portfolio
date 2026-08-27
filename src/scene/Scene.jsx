@@ -1,11 +1,12 @@
-import { useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Environment, Grid, Lightformer, PerformanceMonitor, Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { easing } from 'maath';
 import { CAMERA_KEYFRAMES, CAMERA_WIDE, PALETTE, SPINE } from '../data.js';
 import { useFactory } from '../store.js';
+import { usePointer } from '../hooks.js';
 import { Beam, Strut } from './primitives.jsx';
 import { Spine, SpineFlow } from './DataFlow.jsx';
 import { Stations } from './stations.jsx';
@@ -32,7 +33,14 @@ function CameraRig({ pointer }) {
     intro.current = Math.min(1, intro.current + dt / 2.4);
     const fi = smooth(intro.current);
     const { progress } = useFactory.getState();
-    const { x: px, y: py } = pointer.current;
+
+    // ease the pointer toward its latest target here, in the render loop, so
+    // the parallax smoothing pauses with everything else when the tab hides
+    const ptr = pointer.current;
+    ptr.x += (ptr.tx - ptr.x) * 0.08;
+    ptr.y += (ptr.ty - ptr.y) * 0.08;
+    const px = ptr.x;
+    const py = ptr.y;
     const t = state.clock.elapsedTime;
 
     // interpolate the keyframe path by scroll progress
@@ -184,22 +192,53 @@ function Effects({ full }) {
   );
 }
 
-export default function Scene({ tier, pointer }) {
+// Freeze the render loop (and the clock, so animations resume where they left
+// off instead of lurching) while the tab is in the background.
+function PauseWhenHidden({ setFrameloop }) {
+  const clock = useThree((s) => s.clock);
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) {
+        clock.stop(); // holds elapsedTime where it is
+        setFrameloop('never');
+      } else {
+        // resume without THREE.Clock.start() — that would zero elapsedTime and
+        // snap every time-based animation back to its start. Just clear the
+        // stale delta so the first frame back isn't a giant time step.
+        clock.running = true;
+        clock.oldTime = (typeof performance !== 'undefined' ? performance : Date).now();
+        setFrameloop('always');
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [clock, setFrameloop]);
+  return null;
+}
+
+export default function Scene({ tier }) {
+  const pointer = usePointer();
   // start optimistic, let PerformanceMonitor walk quality down if the GPU
   // can't keep up — smoother than shipping a permanently heavy scene.
   const [dpr, setDpr] = useState(tier === 'full' ? 1.25 : 1);
   const [fx, setFx] = useState(true);
+  const [frameloop, setFrameloop] = useState(() =>
+    typeof document !== 'undefined' && document.hidden ? 'never' : 'always',
+  );
 
   return (
     <Canvas
       dpr={dpr}
+      frameloop={frameloop}
       gl={{
         antialias: false,
         powerPreference: 'high-performance',
         toneMappingExposure: 1.1,
+        stencil: false,
       }}
       camera={{ position: CAMERA_WIDE.pos, fov: 54, near: 0.1, far: 130 }}
     >
+      <PauseWhenHidden setFrameloop={setFrameloop} />
       <PerformanceMonitor
         onDecline={() => {
           setDpr((d) => Math.max(0.75, d - 0.35));
