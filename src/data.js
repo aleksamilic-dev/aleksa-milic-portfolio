@@ -185,7 +185,7 @@ export const CAMERA_WIDE = { pos: [-3.6, 4.4, 18.5], look: [-1.3, 0.9, -6] };
 export const CAMERA_KEYFRAMES = [
   { pos: [-2.7, 3.3, 11.2], look: [-1.7, 0.5, -5.5] }, // hero    · ingestion  (z 0)
   { pos: [-1.4, 2.4, -3.0], look: [-4.8, 1.1, -16] }, //  work    · processing (z -16)
-  { pos: [-2.4, 2.3, -19], look: [-5.1, 1.3, -33] }, //   skills  · storage    (z -32)
+  { pos: [-2.5, 2.35, -19], look: [-3.3, 1.15, -31] }, //   skills  · storage    (z -32)
   { pos: [-1.6, 2.2, -34], look: [-4.7, 1.4, -48] }, //   skills  · control    (z -48)
   { pos: [-2.2, 2.1, -50], look: [-4.6, 1.2, -63] }, //   contact · shipping   (z -64)
 ];

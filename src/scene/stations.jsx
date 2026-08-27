@@ -262,85 +262,90 @@ function StorageVault() {
   // the medallion colour is an edge/label accent, not the whole module —
   // modules are dark steel, the tier reads from the trim.
   const tiers = [
-    { y: 0.05, trim: '#a4693c', out: 0 }, // bronze
-    { y: 1.2, trim: '#aeb7bf', out: 0.3 }, // silver — pulled out, being read
-    { y: 2.35, trim: '#d8ab53', out: 0 }, // gold
+    { y: 0.0, trim: '#a4693c' }, // bronze
+    { y: 1.2, trim: '#aeb7bf', out: 0.35 }, // silver — pulled out, being read
+    { y: 2.4, trim: '#d8ab53' }, // gold
   ];
 
   let idx = 0;
   return (
-    <group position={[-1.2, -0.35, 0]}>
-      <pointLight position={[2.2, 2.6, 2.0]} intensity={2.8} distance={9} color="#cfe0ee" />
+    // a compact cabinet in the left lane, face (+Z) turned back up the
+    // corridor so the camera reads it head-on as it descends past
+    <group position={[-1.75, -0.35, -0.4]}>
+      <pointLight position={[1.2, 2.6, 2.8]} intensity={4} distance={9} color="#cfe0ee" />
 
-      {/* rack frame + plinth */}
-      <mesh position={[-0.35, 1.5, 0]}>
-        <boxGeometry args={[0.35, 3.9, 3.5]} />
-        <meshStandardMaterial {...cast('dark')} />
-      </mesh>
-      {[-1.7, 1.7].map((z) => (
-        <mesh key={z} position={[0.3, 1.55, z]}>
-          <boxGeometry args={[1.7, 4.0, 0.16]} />
+      {/* rack frame: side uprights, shelves, plinth */}
+      {[-1.2, 1.2].map((x) => (
+        <mesh key={x} position={[x, 1.55, -0.1]}>
+          <boxGeometry args={[0.22, 4.0, 1.7]} />
           <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
         </mesh>
       ))}
-      {[-0.5, 0.65, 1.8, 2.95].map((y) => (
-        <mesh key={y} position={[0.45, y, 0]}>
-          <boxGeometry args={[1.5, 0.1, 3.5]} />
+      <mesh position={[0, 1.5, -0.72]}>
+        <boxGeometry args={[2.4, 3.9, 0.3]} />
+        <meshStandardMaterial {...cast('dark')} />
+      </mesh>
+      {[-0.55, 0.6, 1.8, 3.0].map((y) => (
+        <mesh key={y} position={[0, y, -0.05]}>
+          <boxGeometry args={[2.25, 0.1, 1.55]} />
           <meshStandardMaterial {...steel('light', { roughness: 0.35 })} />
         </mesh>
       ))}
-      <mesh position={[0.2, -0.62, 0]}>
-        <boxGeometry args={[2.1, 0.3, 3.7]} />
+      <mesh position={[0, -0.62, -0.1]}>
+        <boxGeometry args={[2.7, 0.3, 1.9]} />
         <meshStandardMaterial {...cast('dark')} />
       </mesh>
 
-      {/* three storage modules */}
+      {/* three storage modules, faces on +Z */}
       {tiers.map((tier, ti) => (
-        <group key={ti} position={[0.45 + tier.out, tier.y + 0.62, 0]}>
+        <group key={ti} position={[0, tier.y + 0.62, tier.out || 0]}>
           <mesh>
-            <boxGeometry args={[1.4, 0.98, 3.3]} />
+            <boxGeometry args={[2.15, 0.98, 1.2]} />
             <meshStandardMaterial {...steel('steel', { roughness: 0.44 })} />
           </mesh>
-          {/* machined tier trim wrapping the leading edge */}
-          <mesh position={[0.7, 0.44, 0]}>
-            <boxGeometry args={[0.16, 0.14, 3.34]} />
-            <meshStandardMaterial color={tier.trim} metalness={1} roughness={0.18} envMapIntensity={2.6} />
-          </mesh>
-          <mesh position={[0.7, -0.44, 0]}>
-            <boxGeometry args={[0.16, 0.14, 3.34]} />
-            <meshStandardMaterial color={tier.trim} metalness={1} roughness={0.18} envMapIntensity={2.6} />
-          </mesh>
+          {/* machined tier trim, top & bottom of the face */}
+          {[0.44, -0.44].map((y) => (
+            <mesh key={y} position={[0, y, 0.6]}>
+              <boxGeometry args={[2.19, 0.14, 0.16]} />
+              <meshStandardMaterial color={tier.trim} metalness={1} roughness={0.18} envMapIntensity={2.6} />
+            </mesh>
+          ))}
           {/* tier light bar — the medallion colour as glow */}
-          <mesh position={[0.74, 0.3, 0]}>
-            <boxGeometry args={[0.03, 0.06, 3.1]} />
-            <meshStandardMaterial color={tier.trim} emissive={tier.trim} emissiveIntensity={0.9} toneMapped={false} />
+          <mesh position={[0, 0.3, 0.63]}>
+            <boxGeometry args={[2.0, 0.06, 0.03]} />
+            <meshStandardMaterial color={tier.trim} emissive={tier.trim} emissiveIntensity={1} toneMapped={false} />
           </mesh>
-          {/* recessed bay panel on the +X face */}
-          <mesh position={[0.7, -0.06, 0]}>
-            <boxGeometry args={[0.06, 0.52, 3.0]} />
+          {/* recessed bay panel */}
+          <mesh position={[0, -0.06, 0.6]}>
+            <boxGeometry args={[1.9, 0.52, 0.06]} />
             <meshStandardMaterial {...cast('dark', { roughness: 0.62 })} />
           </mesh>
           {/* status LEDs */}
           {Array.from({ length: 7 }, (_, c) => {
             const my = idx++;
             return (
-              <mesh key={c} ref={(el) => (cells.current[my] = el)} position={[0.75, -0.06, -1.25 + c * 0.42]}>
-                <boxGeometry args={[0.03, 0.08, 0.14]} />
+              <mesh key={c} ref={(el) => (cells.current[my] = el)} position={[-0.78 + c * 0.26, -0.06, 0.65]}>
+                <boxGeometry args={[0.13, 0.08, 0.03]} />
                 <meshStandardMaterial
                   color={ti === 2 ? PALETTE.amber : PALETTE.blueBright}
                   emissive={ti === 2 ? PALETTE.amber : PALETTE.blueBright}
-                  emissiveIntensity={0.5}
+                  emissiveIntensity={0.55}
                   toneMapped={false}
                 />
               </mesh>
             );
           })}
+          {/* handle */}
+          <mesh position={[0, 0.34, 0.66]}>
+            <boxGeometry args={[0.8, 0.06, 0.12]} />
+            <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+          </mesh>
         </group>
       ))}
 
-      {/* retrieval shuttle on a vertical rail, corridor side */}
-      <mesh position={[1.4, 1.5, 1.7]}>
-        <boxGeometry args={[0.12, 3.7, 0.12]} />
+      {/* retrieval shuttle on a vertical rail down the face */}
+      <mesh position={[1.18, 1.6, 0.62]}>
+        <boxGeometry args={[0.1, 3.4, 0.1]} />
         <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
       </mesh>
       <Shuttle />
@@ -351,16 +356,16 @@ function StorageVault() {
 function Shuttle() {
   const ref = useRef();
   useFrame(({ clock }) => {
-    if (ref.current) ref.current.position.y = 1.6 + Math.sin(clock.elapsedTime * 0.4) * 1.4;
+    if (ref.current) ref.current.position.y = 1.7 + Math.sin(clock.elapsedTime * 0.4) * 1.3;
   });
   return (
-    <group ref={ref} position={[1.4, 1.6, 1.7]}>
+    <group ref={ref} position={[1.18, 1.7, 0.62]}>
       <mesh>
-        <boxGeometry args={[0.34, 0.3, 0.34]} />
+        <boxGeometry args={[0.32, 0.3, 0.34]} />
         <meshStandardMaterial {...steel('dark', { roughness: 0.4 })} />
       </mesh>
-      <mesh position={[-0.16, 0, 0]}>
-        <boxGeometry args={[0.06, 0.14, 0.14]} />
+      <mesh position={[0, 0, 0.19]}>
+        <boxGeometry args={[0.14, 0.14, 0.06]} />
         <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={1} toneMapped={false} />
       </mesh>
     </group>
