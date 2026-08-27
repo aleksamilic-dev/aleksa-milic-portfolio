@@ -21,27 +21,19 @@ export const useFactory = create((set) => ({
   menuOpen: false,
   calmMode: storedCalm(),
 
-  setProgress: (progress, section) => set({ progress, section }),
+  setProgress: (progress) => set({ progress }),
   setSection: (section) => set({ section }),
 
   toggleMenu: () => set((s) => ({ menuOpen: !s.menuOpen })),
   closeMenu: () => set({ menuOpen: false }),
 
-  setCalmMode: (calmMode) => {
-    try {
-      localStorage.setItem(CALM_KEY, calmMode ? '1' : '0');
-    } catch {
-      /* private mode / storage disabled — honour the choice for this session only */
-    }
-    set({ calmMode });
-  },
   toggleCalm: () =>
     set((s) => {
       const calmMode = !s.calmMode;
       try {
         localStorage.setItem(CALM_KEY, calmMode ? '1' : '0');
       } catch {
-        /* no-op */
+        /* private mode / storage disabled — honour the choice for this session only */
       }
       return { calmMode };
     }),

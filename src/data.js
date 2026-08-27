@@ -18,8 +18,6 @@ export const PALETTE = {
   amberBright: '#ffc794',
   amberDeep: '#b1541c',
   green: '#5fd39a',
-  ink: '#eef3f7',
-  inkMute: '#9fb2bf',
   inkFaint: '#5d7280',
 };
 
@@ -167,14 +165,12 @@ export const STATION_GAP = 16;
 export const SPINE = { startZ: 8, endZ: -72, y: 0.34 };
 
 // The five machines, front to back. Only the front few are ever in frame;
-// the rest sit past the fog and exist so the corridor has depth.
-export const MACHINES = [
-  { id: '01', side: 'right' },
-  { id: '02', side: 'left' },
-  { id: '03', side: 'left' },
-  { id: '04', side: 'left' },
-  { id: '05', side: 'left' },
-].map((m, i) => ({ ...m, index: i, z: -i * STATION_GAP }));
+// the rest sit past the fog and exist so the corridor has depth. `id` is the
+// React key; `z` is the position along the corridor.
+export const MACHINES = ['01', '02', '03', '04', '05'].map((id, i) => ({
+  id,
+  z: -i * STATION_GAP,
+}));
 
 // Camera path. On load it eases WIDE -> keyframe 0 (the push-in). After that
 // it glides slowly down the corridor as you scroll — one keyframe per beat,

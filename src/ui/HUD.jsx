@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFactory } from '../store.js';
 import {
   ABOUT,
@@ -17,15 +17,12 @@ import {
   ExternalLink,
   Menu,
   Send,
+  SOCIAL_ICONS,
   Waves,
   X,
 } from './icons.js';
-import { SOCIAL_ICONS } from './icons.js';
 import portrait from '../assets/aleksa.webp';
 
-// One scroll container drives everything. Keep a module-scoped handle so any
-// control can request a jump without prop-drilling through the tree.
-let scrollerEl = null;
 const reduced = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -399,13 +396,6 @@ export default function HUD() {
   const ticking = useRef(false);
   const pending = useRef([]); // [data-reveal] elements not yet shown
 
-  useLayoutEffect(() => {
-    scrollerEl = viewport.current;
-    return () => {
-      if (scrollerEl === viewport.current) scrollerEl = null;
-    };
-  }, []);
-
   // One rAF-throttled pass per scroll handles both jobs: the 0..1 progress
   // for the rail fill, and revealing any [data-reveal] that has entered the
   // lower viewport. Doing reveals here (rather than via IntersectionObserver)
@@ -416,7 +406,7 @@ export default function HUD() {
     if (!el) return;
 
     const max = el.scrollHeight - el.clientHeight;
-    setProgress(max > 0 ? el.scrollTop / max : 0, useFactory.getState().section);
+    setProgress(max > 0 ? el.scrollTop / max : 0);
 
     const trigger = el.clientHeight * 0.92;
     if (pending.current.length) {
