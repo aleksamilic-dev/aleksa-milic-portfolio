@@ -1,12 +1,14 @@
 # Aleksa Milić — Data Engineering Portfolio
 
-Personal portfolio for Aleksa Milić, Data Engineer.
+Personal portfolio for Aleksa Milić, Data Engineer. A single-page site with an
+ambient 3D "data factory" scene (React + Vite + react-three-fiber) sitting behind
+the content.
 
 ## Run locally
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
 ## Build
@@ -15,4 +17,11 @@ npm start
 npm run build
 ```
 
-GitHub Pages publishes the generated site from `docs/` on the `master` branch.
+Vite builds into `docs/`. GitHub Pages publishes the site from `docs/` on the
+`master` branch, served at [aleksa-milic.com](https://aleksa-milic.com) (see
+`public/CNAME`). Rebuild and commit `docs/` whenever the site changes.
+
+## Content
+
+All copy and the scene layout live in `src/data.js`. Entries marked `TODO —` are
+scaffolding to replace with real specifics.
