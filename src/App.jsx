@@ -9,10 +9,30 @@ import Fallback from './ui/Fallback.jsx';
 // the page is fully readable before (and without) it.
 const Scene = lazy(() => import('./scene/Scene.jsx'));
 
+// Dev-only: ?inspect=<0-4> swaps the whole app for a single machine on a lit
+// turntable (see scene/Inspector.jsx). Not reachable from the shipped UI.
+const Inspector = lazy(() => import('./scene/Inspector.jsx'));
+const INSPECT =
+  typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('inspect')
+    : null;
+
 export default function App() {
   const tier = useDeviceTier();
   const calm = useFactory((s) => s.calmMode);
   const section = useFactory((s) => s.section);
+
+  if (INSPECT !== null) {
+    return (
+      <div className="app" data-tier="full">
+        <div className="canvas-wrap">
+          <Suspense fallback={null}>
+            <Inspector index={Number(INSPECT) || 0} />
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app" data-tier={tier} data-calm={calm || undefined} id="top">

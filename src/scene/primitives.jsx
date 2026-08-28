@@ -82,6 +82,58 @@ export function Band({ radius = 1, tube = 0.045, seg = 40, tone = 'light', ...pr
   );
 }
 
+// A toothed gear — solid rim + hub + a ring of instanced teeth (one draw call
+// for the teeth). Lies in the X–Y plane with its axis on Z; rotate the parent
+// to reorient. `hub={false}` for a girth gear that wraps another body.
+export function Gear({
+  radius = 1,
+  teeth = 24,
+  thickness = 0.16,
+  tone = 'steel',
+  hub = true,
+  ...props
+}) {
+  const ref = useRef();
+  useLayoutEffect(() => {
+    const m = new THREE.Object3D();
+    for (let i = 0; i < teeth; i++) {
+      const a = (i / teeth) * Math.PI * 2;
+      m.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+      m.rotation.set(0, 0, a);
+      m.updateMatrix();
+      ref.current.setMatrixAt(i, m.matrix);
+    }
+    ref.current.instanceMatrix.needsUpdate = true;
+  }, [teeth, radius]);
+
+  return (
+    <group {...props}>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[radius, radius, thickness, Math.max(28, teeth * 2)]} />
+        <meshStandardMaterial {...steel(tone, { roughness: 0.4 })} />
+      </mesh>
+      {hub && (
+        <>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[radius * 0.3, radius * 0.3, thickness * 1.5, 16]} />
+            <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
+          </mesh>
+          {[0, Math.PI / 3, -Math.PI / 3].map((a) => (
+            <mesh key={a} rotation={[0, 0, a]}>
+              <boxGeometry args={[radius * 1.7, radius * 0.16, thickness * 0.7]} />
+              <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
+            </mesh>
+          ))}
+        </>
+      )}
+      <instancedMesh ref={ref} args={[undefined, undefined, teeth]}>
+        <boxGeometry args={[radius * 0.15, (radius * Math.PI) / teeth, thickness]} />
+        <meshStandardMaterial {...steel(tone, { roughness: 0.38 })} />
+      </instancedMesh>
+    </group>
+  );
+}
+
 export function Beam({ length = 1, size = 0.16, color = PALETTE.steel, ...props }) {
   return (
     <mesh {...props}>
