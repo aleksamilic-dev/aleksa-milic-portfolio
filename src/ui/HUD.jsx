@@ -127,7 +127,7 @@ function Hero() {
       <div className="hero" data-reveal>
         <p className="hero__eyebrow">
           <span className="hero__spark" aria-hidden />
-          {HERO.role} · {HERO.location}
+          {HERO.tagline}
         </p>
         <h1 className="hero__title">{HERO.name}</h1>
         <p className="hero__value">{HERO.value}</p>
@@ -143,7 +143,6 @@ function Hero() {
             </button>
           ))}
         </div>
-        {HERO.tagline && <p className="hero__tagline">{HERO.tagline}</p>}
       </div>
 
       <ProfileCard />

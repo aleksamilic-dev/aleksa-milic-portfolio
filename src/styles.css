@@ -76,7 +76,6 @@ a {
 
 /* shared mono micro-label */
 .hero__eyebrow,
-.hero__tagline,
 .hero__cue,
 .rail__label,
 .section__kicker,
@@ -490,7 +489,8 @@ a {
   align-items: center;
   gap: 10px;
   color: var(--ink-mute);
-  margin: 0 0 24px;
+  letter-spacing: 0.2em;
+  margin: 0 0 26px;
 }
 
 .hero__spark {
@@ -523,12 +523,6 @@ a {
   flex-wrap: wrap;
   gap: 18px 30px;
   margin-top: 34px;
-}
-
-.hero__tagline {
-  margin: 44px 0 0;
-  color: var(--ink-faint);
-  letter-spacing: 0.24em;
 }
 
 .hero__cue {
@@ -1122,11 +1116,6 @@ a {
     margin-top: 26px;
   }
 
-  /* decorative — drop it on the phone so the machine gets the lower frame */
-  .hero__tagline {
-    display: none;
-  }
-
   /* soft vertical scrim — dark under the topbar, easing right off below the
      copy so the machine reads clearly in the lower frame */
   .section--hero {
@@ -1146,7 +1135,6 @@ a {
 
   /* running copy sits over the moving corridor now — keep it crisp */
   .hero__value,
-  .hero__tagline,
   .section__title,
   .project__title,
   .project__context,
