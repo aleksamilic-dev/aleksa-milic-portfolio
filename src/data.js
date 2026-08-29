@@ -190,14 +190,18 @@ export const CAMERA_KEYFRAMES = [
   { pos: [-2.2, 2.1, -50], look: [-4.6, 1.2, -63] }, //   contact · shipping   (z -64)
 ];
 
-// Mobile hero framing. The corridor keyframes above pan left so machinery sits
-// in the right ~40% of a wide screen; a portrait phone has no right 40%, so the
-// mobile hero uses its own head-on-ish framing of machine 01 (the intake silo)
-// sitting in the lower half of the frame — the upper half reads as haze behind
-// the stacked hero copy. WIDE -> HERO is the push-in on load. See HeroScene.jsx.
-export const CAMERA_HERO_WIDE = { pos: [3.8, 4.0, 12.5], look: [0.1, 2.5, -0.8] };
-export const CAMERA_HERO = { pos: [2.5, 2.75, 8.3], look: [0.05, 2.25, -0.5] };
-
-// Short spine segment drawn under the mobile hero — a stub of conveyor feeding
-// the silo, with packets flowing in. (The full SPINE runs the whole corridor.)
-export const HERO_SPINE = { from: 7, to: -9 };
+// Portrait / phone camera path. The landscape keyframes above pan left so
+// machinery sits in the right ~40% of a wide screen — a portrait phone has no
+// right 40%. This one rides straight down the corridor centreline at a constant
+// pulled-back offset (a gentle 3/4 from the right for depth), so each machine
+// drifts past small and legible with the corridor around it as you scroll.
+// Machine i sits at z = -STATION_GAP * i; storage (03) sits in the left lane so
+// its beat looks a touch left.
+export const CAMERA_WIDE_PORTRAIT = { pos: [3.4, 5.6, 21], look: [0, 2.2, -7] };
+export const CAMERA_KEYFRAMES_PORTRAIT = [
+  { pos: [2.1, 3.9, 16], look: [0.1, 1.9, -3] }, //   ingestion (z 0)
+  { pos: [2.1, 3.8, 0], look: [0, 1.8, -19] }, //     processing (z -16)
+  { pos: [2.2, 3.9, -16], look: [-0.9, 1.8, -35] }, // storage    (z -32, left lane)
+  { pos: [2.1, 3.8, -32], look: [0, 1.8, -51] }, //   control    (z -48)
+  { pos: [2.1, 3.7, -48], look: [0, 1.7, -67] }, //   shipping   (z -64)
+];

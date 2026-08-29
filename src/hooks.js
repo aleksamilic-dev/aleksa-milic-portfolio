@@ -20,8 +20,8 @@ export const useReducedMotion = () =>
 
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
 // `lite` runs the 3D scene stripped down, `flat` falls back to the static 2D
-// backdrop. Reduced-motion forces `flat`; phones run `lite` (App renders the
-// portrait HeroScene for them — see App.jsx).
+// backdrop. Reduced-motion forces `flat`; phones run `lite` (App also passes
+// `portrait` so the Scene uses the centreline camera path — see App.jsx).
 const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
 ).get('tier');

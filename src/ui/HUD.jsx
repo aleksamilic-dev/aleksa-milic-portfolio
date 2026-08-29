@@ -359,20 +359,7 @@ export default function HUD() {
     );
     sections.forEach((s) => sectionObserver.observe(s));
 
-    // Whether the hero is still meaningfully on screen — gates the mobile
-    // HeroScene's render loop (it freezes once you've scrolled past).
-    const hero = sections[0];
-    const heroObserver = new IntersectionObserver(
-      ([entry]) =>
-        useFactory.getState().setHeroInView(entry.intersectionRatio >= 0.1),
-      { root, threshold: [0, 0.1, 0.5] },
-    );
-    if (hero) heroObserver.observe(hero);
-
-    return () => {
-      sectionObserver.disconnect();
-      heroObserver.disconnect();
-    };
+    return () => sectionObserver.disconnect();
   }, []);
 
   return (

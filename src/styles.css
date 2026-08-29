@@ -123,18 +123,6 @@ a {
   display: block;
 }
 
-/* mobile: the 3D is a hero-only moment — once the hero scrolls away the canvas
-   fades out and its render loop freezes (App sets data-hero-out). */
-.app[data-hero-out] .canvas-wrap {
-  opacity: 0;
-}
-
-@media (max-width: 720px) {
-  .canvas-wrap {
-    transition: opacity 0.55s var(--ease);
-  }
-}
-
 /* light, even wash over the 3D — enough to seat the hero copy; the content
    sections below carry their own (semi-transparent) surface so the factory
    still drifts visibly behind them */
@@ -1097,50 +1085,43 @@ a {
   .section--skills,
   .section--contact {
     padding: 10vh 18px;
-  }
-
-  /* phones: content sits on solid dark. The 3D is a hero-only moment, so
-     nothing below the hero should show canvas (or a frozen frame) behind it. */
-  .section--work,
-  .section--skills,
-  .section--contact {
-    background: var(--void);
+    /* more transparent than the tablet surface — the corridor drifts past
+       full-width behind the copy now, so let more of it through */
+    background: rgba(9, 12, 17, 0.6);
   }
 
   .hero__cue {
     display: none;
   }
 
-  /* capable phones get the portrait HeroScene behind the copy — near-solid
-     behind the topbar + card, easing to a light scrim over the machine so the
-     silo reads as a strong presence and clears entirely below the fold */
-  .app[data-tier='lite'] .section--hero,
-  .app[data-tier='full'] .section--hero {
-    min-height: 122svh;
-    align-content: start;
-    padding: calc(var(--topbar-h) + 6vh) 18px 0;
+  /* the hero itself stays mostly clear so the first machine reads; a soft
+     vertical scrim (dark under the topbar, easing off past the copy) keeps the
+     stacked text legible over it. Replaces the landscape side-scrim. */
+  .section--hero {
     background: linear-gradient(
       180deg,
-      rgba(8, 11, 16, 0.96) 0,
-      rgba(8, 11, 16, 0.82) 15%,
-      rgba(8, 11, 16, 0.58) 34%,
-      rgba(8, 11, 16, 0.5) 62%,
-      rgba(8, 11, 16, 0.3) 82%,
-      rgba(8, 11, 16, 0.12) 100%
+      rgba(8, 11, 16, 0.9) 0,
+      rgba(8, 11, 16, 0.55) 24%,
+      rgba(8, 11, 16, 0.4) 62%,
+      rgba(8, 11, 16, 0.16) 88%,
+      transparent 100%
     );
   }
 
-  .app[data-tier='lite'] .section--hero::before,
-  .app[data-tier='full'] .section--hero::before {
+  .section--hero::before {
     display: none;
   }
 
-  /* extra backing for the lower hero copy, which now sits over the lit silo */
-  .app[data-tier='lite'] .hero__value,
-  .app[data-tier='full'] .hero__value,
-  .app[data-tier='lite'] .hero__tagline,
-  .app[data-tier='full'] .hero__tagline {
-    text-shadow: 0 1px 16px rgba(6, 9, 13, 0.9), 0 1px 4px rgba(6, 9, 13, 0.8);
+  /* running copy sits over the moving corridor now — keep it crisp */
+  .hero__value,
+  .hero__tagline,
+  .section__title,
+  .project__title,
+  .project__context,
+  .about,
+  .xp__body li,
+  .contact__blurb {
+    text-shadow: 0 1px 16px rgba(6, 9, 13, 0.92), 0 1px 4px rgba(6, 9, 13, 0.8);
   }
 
   .flat__line {

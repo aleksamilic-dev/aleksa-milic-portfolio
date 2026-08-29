@@ -9,7 +9,16 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { easing } from 'maath';
-import { CAMERA_KEYFRAMES, CAMERA_WIDE, MACHINES, PALETTE, SPINE, STATION_GAP } from '../data.js';
+import {
+  CAMERA_KEYFRAMES,
+  CAMERA_KEYFRAMES_PORTRAIT,
+  CAMERA_WIDE,
+  CAMERA_WIDE_PORTRAIT,
+  MACHINES,
+  PALETTE,
+  SPINE,
+  STATION_GAP,
+} from '../data.js';
 import { useFactory } from '../store.js';
 import { usePointer } from '../hooks.js';
 import { StudioEnv } from './env.jsx';
@@ -28,11 +37,12 @@ const smooth = (x) => {
 const mix = (a, b, t) => a + (b - a) * t;
 
 // --- camera: push-in on load, then a slow glide down the corridor --------
-// On mount the camera eases CAMERA_WIDE -> keyframe 0 (~2.4s). After that it
-// tracks `progress` along CAMERA_KEYFRAMES, heavily damped, so each machine
-// drifts past behind the copy as you scroll. Languid, dim, not a tour.
-function CameraRig({ pointer }) {
-  const look = useRef(new THREE.Vector3(...CAMERA_WIDE.look));
+// On mount the camera eases `wide` -> keyframe 0 (~2.4s). After that it tracks
+// `progress` along `keyframes`, heavily damped, so each machine drifts past as
+// you scroll. Languid, dim, not a tour. Portrait phones pass the centreline
+// path (see data.js) instead of the landscape one.
+function CameraRig({ pointer, keyframes, wide }) {
+  const look = useRef(new THREE.Vector3(...wide.look));
   const intro = useRef(0);
 
   useFrame((state, dt) => {
@@ -50,15 +60,15 @@ function CameraRig({ pointer }) {
     const t = state.clock.elapsedTime;
 
     // interpolate the keyframe path by scroll progress
-    const seg = progress * (CAMERA_KEYFRAMES.length - 1);
-    const i = Math.min(Math.floor(seg), CAMERA_KEYFRAMES.length - 2);
+    const seg = progress * (keyframes.length - 1);
+    const i = Math.min(Math.floor(seg), keyframes.length - 2);
     const f = smooth(seg - i);
-    const a = CAMERA_KEYFRAMES[i];
-    const b = CAMERA_KEYFRAMES[i + 1];
+    const a = keyframes[i];
+    const b = keyframes[i + 1];
 
-    // blend the intro (WIDE -> keyframe 0) into the travel target
-    const tp = (k) => mix(CAMERA_WIDE.pos[k], mix(a.pos[k], b.pos[k], f), fi);
-    const tl = (k) => mix(CAMERA_WIDE.look[k], mix(a.look[k], b.look[k], f), fi);
+    // blend the intro (wide -> keyframe 0) into the travel target
+    const tp = (k) => mix(wide.pos[k], mix(a.pos[k], b.pos[k], f), fi);
+    const tl = (k) => mix(wide.look[k], mix(a.look[k], b.look[k], f), fi);
 
     easing.damp3(
       state.camera.position,
@@ -251,7 +261,7 @@ function PauseWhenHidden({ setFrameloop }) {
   return null;
 }
 
-export default function Scene({ tier }) {
+export default function Scene({ tier, portrait = false }) {
   const pointer = usePointer();
   // start optimistic, let PerformanceMonitor walk quality down if the GPU
   // can't keep up — smoother than shipping a permanently heavy scene.
@@ -264,6 +274,9 @@ export default function Scene({ tier }) {
     typeof document !== 'undefined' && document.hidden ? 'never' : 'always',
   );
 
+  const wide = portrait ? CAMERA_WIDE_PORTRAIT : CAMERA_WIDE;
+  const keyframes = portrait ? CAMERA_KEYFRAMES_PORTRAIT : CAMERA_KEYFRAMES;
+
   return (
     <Canvas
       dpr={dpr}
@@ -274,7 +287,14 @@ export default function Scene({ tier }) {
         toneMappingExposure: 1.1,
         stencil: false,
       }}
-      camera={{ position: CAMERA_WIDE.pos, fov: 54, near: 0.1, far: 130 }}
+      // portrait sees a much narrower horizontal slice — widen the lens and
+      // hold the far plane closer in (the corridor is only ~80 deep)
+      camera={{
+        position: wide.pos,
+        fov: portrait ? 62 : 54,
+        near: 0.1,
+        far: portrait ? 90 : 130,
+      }}
     >
       <PauseWhenHidden setFrameloop={setFrameloop} />
       <PerformanceMonitor
@@ -289,7 +309,9 @@ export default function Scene({ tier }) {
       />
 
       <color attach="background" args={[PALETTE.void]} />
-      <fog attach="fog" args={[PALETTE.void, 7, 36]} />
+      {/* portrait rides further back down the centreline — pull the haze in so
+          the focused machine still separates and the far corridor stays dim */}
+      <fog attach="fog" args={[PALETTE.void, portrait ? 9 : 7, portrait ? 40 : 36]} />
 
       <ambientLight intensity={0.3} />
       <hemisphereLight intensity={0.62} color="#3a5064" groundColor="#06090d" />
@@ -317,7 +339,7 @@ export default function Scene({ tier }) {
         />
       )}
 
-      <CameraRig pointer={pointer} />
+      <CameraRig pointer={pointer} keyframes={keyframes} wide={wide} />
       {fx && <Effects full={tier === 'full'} />}
 
       {/* compile every machine's shaders/geometry during the initial load so
