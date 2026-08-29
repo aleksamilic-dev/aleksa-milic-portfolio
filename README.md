@@ -1,6 +1,6 @@
-# Aleksa Milić — Data Engineering Portfolio
+# Aleksa Milic — Data Engineering Portfolio
 
-Personal portfolio for Aleksa Milić, Data Engineer. A single-page site with an
+Personal portfolio for Aleksa Milic, Data Engineer. A single-page site with an
 ambient 3D "data factory" scene (React + Vite + react-three-fiber) sitting behind
 the content.
 

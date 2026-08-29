@@ -23,7 +23,7 @@ export const PALETTE = {
 
 // --- who ----------------------------------------------------------------
 export const HERO = {
-  name: 'Aleksa Milić',
+  name: 'Aleksa Milic',
   role: 'Data Engineer',
   location: 'Niš, Serbia',
   value:
