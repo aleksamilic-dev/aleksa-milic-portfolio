@@ -19,33 +19,51 @@ export const useReducedMotion = () =>
   useMediaQuery('(prefers-reduced-motion: reduce)');
 
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
-// `lite` runs the 3D scene stripped down, `flat` falls back to the static 2D
-// backdrop. Reduced-motion forces `flat`; phones run `lite` (App also passes
-// `portrait` so the Scene uses the centreline camera path — see App.jsx).
-const TIER_OVERRIDE = new URLSearchParams(
+// `lite` runs the 3D scene stripped down, `flat` is the static 2D backdrop
+// (only when WebGL genuinely can't run). Phones get `lite` + `portrait`
+// (centreline camera). `still` keeps the 3D but freezes every autonomous
+// animation — used for prefers-reduced-motion, which on iOS also covers Low
+// Power Mode. Those visitors were getting the flat fallback before.
+const PARAMS = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
-).get('tier');
+);
+const TIER_OVERRIDE = PARAMS.get('tier'); // ?tier=flat|lite|full
+const STILL_OVERRIDE = PARAMS.has('still'); // ?still — force the frozen scene
 
 export function useDeviceTier() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotion() || STILL_OVERRIDE;
   const small = useMediaQuery('(max-width: 720px)');
-  const [tier, setTier] = useState(TIER_OVERRIDE || 'full');
+  const [state, setState] = useState(() => ({
+    tier: TIER_OVERRIDE || 'full',
+    still: STILL_OVERRIDE,
+  }));
 
   useEffect(() => {
-    if (TIER_OVERRIDE) return; // ?tier=flat|lite|full forces a mode for testing
-    if (reduced) return setTier('flat');
+    if (TIER_OVERRIDE) return setState({ tier: TIER_OVERRIDE, still: reduced });
+
+    let gl = null;
+    try {
+      gl = document.createElement('canvas').getContext('webgl2');
+    } catch {
+      gl = null;
+    }
     const cores = navigator.hardwareConcurrency || 8;
     const mem = navigator.deviceMemory || 8;
-    const gl = document.createElement('canvas').getContext('webgl2');
-    // no WebGL or a genuinely weak device -> static 2D backdrop
-    if (!gl || cores <= 2 || mem <= 2) return setTier('flat');
-    // phones that clear that bar run the stripped scene (the portrait hero);
-    // so do modest laptops. Neither gets the full postprocessing pass.
-    if (small || cores <= 4 || mem <= 4) return setTier('lite');
-    setTier('full');
+
+    // three r0.171 is WebGL2-only, so no context (or a genuinely weak device)
+    // means the static 2D backdrop — there's no lighter 3D path to offer.
+    if (!gl || cores <= 2 || mem <= 2) {
+      setState({ tier: 'flat', still: reduced });
+      return;
+    }
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+    // capable: phones + modest laptops get the stripped scene, the rest full.
+    const tier = small || cores <= 4 || mem <= 4 ? 'lite' : 'full';
+    setState({ tier, still: reduced });
   }, [reduced, small]);
 
-  return tier;
+  return state;
 }
 
 // Pointer position in normalised [-1, 1] space. `tx/ty` is the live target;
