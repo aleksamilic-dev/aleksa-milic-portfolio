@@ -197,11 +197,11 @@ export const CAMERA_KEYFRAMES = [
 // drifts past small and legible with the corridor around it as you scroll.
 // Machine i sits at z = -STATION_GAP * i; storage (03) sits in the left lane so
 // its beat looks a touch left.
-export const CAMERA_WIDE_PORTRAIT = { pos: [3.4, 5.6, 21], look: [0, 2.2, -7] };
+export const CAMERA_WIDE_PORTRAIT = { pos: [2.4, 4.4, 17], look: [-1.6, 1.3, -6] };
 export const CAMERA_KEYFRAMES_PORTRAIT = [
-  { pos: [2.1, 3.9, 16], look: [0.1, 1.9, -3] }, //   ingestion (z 0)
-  { pos: [2.1, 3.8, 0], look: [0, 1.8, -19] }, //     processing (z -16)
-  { pos: [2.2, 3.9, -16], look: [-0.9, 1.8, -35] }, // storage    (z -32, left lane)
-  { pos: [2.1, 3.8, -32], look: [0, 1.8, -51] }, //   control    (z -48)
-  { pos: [2.1, 3.7, -48], look: [0, 1.7, -67] }, //   shipping   (z -64)
+  { pos: [1.2, 3.1, 11], look: [-1.7, 0.9, -4] }, //  ingestion  (z 0 — arrival: silo sits right-of-centre, low, so the title clears it)
+  { pos: [2.1, 3.6, -2], look: [0, 1.7, -19] }, //     processing (z -16)
+  { pos: [2.2, 3.7, -18], look: [-0.9, 1.6, -35] }, // storage    (z -32, left lane)
+  { pos: [2.1, 3.6, -34], look: [0, 1.7, -51] }, //   control    (z -48)
+  { pos: [2.1, 3.5, -50], look: [0, 1.5, -67] }, //   shipping   (z -64)
 ];

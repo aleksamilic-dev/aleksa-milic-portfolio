@@ -1058,7 +1058,7 @@ a {
 
   .profile {
     order: -1;
-    width: 200px;
+    width: 190px;
   }
 
   .profile__meta {
@@ -1094,17 +1094,49 @@ a {
     display: none;
   }
 
-  /* the hero itself stays mostly clear so the first machine reads; a soft
-     vertical scrim (dark under the topbar, easing off past the copy) keeps the
-     stacked text legible over it. Replaces the landscape side-scrim. */
+  /* pack the copy toward the top and give the machine the lower third of the
+     frame to itself — a small profile card, tighter gaps */
+  .section--hero {
+    align-content: start;
+    gap: 4vh;
+    min-height: 104svh;
+    padding: calc(var(--topbar-h) + 5vh) 18px 0;
+  }
+
+  .profile {
+    width: 150px;
+    padding: 8px;
+  }
+
+  .profile__meta {
+    font-size: 7px;
+    letter-spacing: 0.06em;
+    padding-top: 8px;
+  }
+
+  .hero__value {
+    margin-top: 20px;
+  }
+
+  .hero__actions {
+    margin-top: 26px;
+  }
+
+  /* decorative — drop it on the phone so the machine gets the lower frame */
+  .hero__tagline {
+    display: none;
+  }
+
+  /* soft vertical scrim — dark under the topbar, easing right off below the
+     copy so the machine reads clearly in the lower frame */
   .section--hero {
     background: linear-gradient(
       180deg,
-      rgba(8, 11, 16, 0.9) 0,
-      rgba(8, 11, 16, 0.55) 24%,
-      rgba(8, 11, 16, 0.4) 62%,
-      rgba(8, 11, 16, 0.16) 88%,
-      transparent 100%
+      rgba(8, 11, 16, 0.86) 0,
+      rgba(8, 11, 16, 0.44) 20%,
+      rgba(8, 11, 16, 0.22) 44%,
+      rgba(8, 11, 16, 0.04) 62%,
+      transparent 74%
     );
   }
 

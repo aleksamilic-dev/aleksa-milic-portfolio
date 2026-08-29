@@ -313,8 +313,10 @@ export default function Scene({ tier, portrait = false }) {
           the focused machine still separates and the far corridor stays dim */}
       <fog attach="fog" args={[PALETTE.void, portrait ? 9 : 7, portrait ? 40 : 36]} />
 
-      <ambientLight intensity={0.3} />
-      <hemisphereLight intensity={0.62} color="#3a5064" groundColor="#06090d" />
+      {/* portrait shows the machines more head-on and with less scrim in front
+          — lift the fill a little so they read as objects, not silhouettes */}
+      <ambientLight intensity={portrait ? 0.42 : 0.3} />
+      <hemisphereLight intensity={portrait ? 0.8 : 0.62} color="#3a5064" groundColor="#06090d" />
       <directionalLight position={[-6, 9, 4]} intensity={1.2} color="#dbe8f5" />
       <directionalLight position={[7, 4, -6]} intensity={0.45} color={PALETTE.blue} />
       <CameraFill />
