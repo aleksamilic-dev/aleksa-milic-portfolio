@@ -123,6 +123,18 @@ a {
   display: block;
 }
 
+/* mobile: the 3D is a hero-only moment — once the hero scrolls away the canvas
+   fades out and its render loop freezes (App sets data-hero-out). */
+.app[data-hero-out] .canvas-wrap {
+  opacity: 0;
+}
+
+@media (max-width: 720px) {
+  .canvas-wrap {
+    transition: opacity 0.55s var(--ease);
+  }
+}
+
 /* light, even wash over the 3D — enough to seat the hero copy; the content
    sections below carry their own (semi-transparent) surface so the factory
    still drifts visibly behind them */
@@ -1087,12 +1099,67 @@ a {
     padding: 10vh 18px;
   }
 
+  /* phones: content sits on solid dark. The 3D is a hero-only moment, so
+     nothing below the hero should show canvas (or a frozen frame) behind it. */
+  .section--work,
+  .section--skills,
+  .section--contact {
+    background: var(--void);
+  }
+
   .hero__cue {
     display: none;
   }
 
+  /* capable phones get the portrait HeroScene behind the copy — near-solid
+     behind the topbar + card, easing to a light scrim over the machine so the
+     silo reads as a strong presence and clears entirely below the fold */
+  .app[data-tier='lite'] .section--hero,
+  .app[data-tier='full'] .section--hero {
+    min-height: 122svh;
+    align-content: start;
+    padding: calc(var(--topbar-h) + 6vh) 18px 0;
+    background: linear-gradient(
+      180deg,
+      rgba(8, 11, 16, 0.96) 0,
+      rgba(8, 11, 16, 0.82) 15%,
+      rgba(8, 11, 16, 0.58) 34%,
+      rgba(8, 11, 16, 0.5) 62%,
+      rgba(8, 11, 16, 0.3) 82%,
+      rgba(8, 11, 16, 0.12) 100%
+    );
+  }
+
+  .app[data-tier='lite'] .section--hero::before,
+  .app[data-tier='full'] .section--hero::before {
+    display: none;
+  }
+
+  /* extra backing for the lower hero copy, which now sits over the lit silo */
+  .app[data-tier='lite'] .hero__value,
+  .app[data-tier='full'] .hero__value,
+  .app[data-tier='lite'] .hero__tagline,
+  .app[data-tier='full'] .hero__tagline {
+    text-shadow: 0 1px 16px rgba(6, 9, 13, 0.9), 0 1px 4px rgba(6, 9, 13, 0.8);
+  }
+
   .flat__line {
-    top: 72%;
+    top: 89%;
+  }
+
+  /* larger touch targets for the header icons */
+  .topbar__social {
+    gap: 2px;
+    margin-right: -10px;
+  }
+
+  .topbar__social a {
+    padding: 10px;
+  }
+
+  /* empty project figures shouldn't dominate the column on a phone */
+  .project__figure:has(.project__figure-ph) {
+    min-height: 120px;
   }
 
   .project {

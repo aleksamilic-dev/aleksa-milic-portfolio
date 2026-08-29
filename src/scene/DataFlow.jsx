@@ -10,7 +10,9 @@ const GOLD = new THREE.Color(PALETTE.green);
 // Packets travelling the length of the spine. They start "raw" (amber),
 // turn "refined" (blue) as they clear the Processing Hall, and pick up a
 // golden cast once they pass Storage — a legible left-to-right narrative.
-export function SpineFlow({ count = 46, tier = 'full' }) {
+// `from`/`to` bound the z-range travelled; default is the whole corridor, the
+// mobile hero passes a short stub (HERO_SPINE).
+export function SpineFlow({ count = 46, tier = 'full', from = SPINE.startZ, to = SPINE.endZ }) {
   const n = tier === 'full' ? count : Math.round(count * 0.6);
   const mesh = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -36,12 +38,12 @@ export function SpineFlow({ count = 46, tier = 'full' }) {
   useFrame(({ clock }) => {
     if (!mesh.current) return;
     const t = clock.elapsedTime;
-    const span = SPINE.endZ - SPINE.startZ;
+    const span = to - from;
     const colorTick = Math.floor(t * 12) % 2 === 0; // recolour every other frame
     for (let i = 0; i < n; i++) {
       const s = seeds[i];
       const p = (s.phase + t * s.speed) % 1;
-      const z = SPINE.startZ + p * span;
+      const z = from + p * span;
       const pop = Math.sin(p * Math.PI);
       dummy.position.set(
         s.lane,
@@ -72,14 +74,15 @@ export function SpineFlow({ count = 46, tier = 'full' }) {
 }
 
 // The physical spine: a slim rail with a glowing top edge, on regular legs.
-export function Spine() {
+// `from`/`to` bound the z-span; default is the whole corridor.
+export function Spine({ from = SPINE.startZ, to = SPINE.endZ }) {
   const legs = useMemo(() => {
     const out = [];
-    for (let z = SPINE.startZ - 2; z > SPINE.endZ; z -= 4) out.push(z);
+    for (let z = from - 2; z > to; z -= 4) out.push(z);
     return out;
-  }, []);
-  const length = SPINE.startZ - SPINE.endZ;
-  const midZ = (SPINE.startZ + SPINE.endZ) / 2;
+  }, [from, to]);
+  const length = from - to;
+  const midZ = (from + to) / 2;
 
   return (
     <group>

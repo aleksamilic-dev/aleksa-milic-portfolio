@@ -189,3 +189,15 @@ export const CAMERA_KEYFRAMES = [
   { pos: [-1.6, 2.2, -34], look: [-4.7, 1.4, -48] }, //   skills  · control    (z -48)
   { pos: [-2.2, 2.1, -50], look: [-4.6, 1.2, -63] }, //   contact · shipping   (z -64)
 ];
+
+// Mobile hero framing. The corridor keyframes above pan left so machinery sits
+// in the right ~40% of a wide screen; a portrait phone has no right 40%, so the
+// mobile hero uses its own head-on-ish framing of machine 01 (the intake silo)
+// sitting in the lower half of the frame — the upper half reads as haze behind
+// the stacked hero copy. WIDE -> HERO is the push-in on load. See HeroScene.jsx.
+export const CAMERA_HERO_WIDE = { pos: [3.8, 4.0, 12.5], look: [0.1, 2.5, -0.8] };
+export const CAMERA_HERO = { pos: [2.5, 2.75, 8.3], look: [0.05, 2.25, -0.5] };
+
+// Short spine segment drawn under the mobile hero — a stub of conveyor feeding
+// the silo, with packets flowing in. (The full SPINE runs the whole corridor.)
+export const HERO_SPINE = { from: 7, to: -9 };

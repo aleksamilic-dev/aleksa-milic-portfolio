@@ -20,7 +20,8 @@ export const useReducedMotion = () =>
 
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
 // `lite` runs the 3D scene stripped down, `flat` falls back to the static 2D
-// backdrop. Reduced-motion forces `flat`.
+// backdrop. Reduced-motion forces `flat`; phones run `lite` (App renders the
+// portrait HeroScene for them — see App.jsx).
 const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
 ).get('tier');
@@ -36,8 +37,11 @@ export function useDeviceTier() {
     const cores = navigator.hardwareConcurrency || 8;
     const mem = navigator.deviceMemory || 8;
     const gl = document.createElement('canvas').getContext('webgl2');
-    if (!gl || small || cores <= 2 || mem <= 2) return setTier('flat');
-    if (cores <= 4 || mem <= 4) return setTier('lite');
+    // no WebGL or a genuinely weak device -> static 2D backdrop
+    if (!gl || cores <= 2 || mem <= 2) return setTier('flat');
+    // phones that clear that bar run the stripped scene (the portrait hero);
+    // so do modest laptops. Neither gets the full postprocessing pass.
+    if (small || cores <= 4 || mem <= 4) return setTier('lite');
     setTier('full');
   }, [reduced, small]);
 
