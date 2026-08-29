@@ -1065,13 +1065,12 @@ const MACHINE_PARTS = [
   ShippingDock,
 ];
 
-export function Stations({ still = false }) {
+export function Stations() {
   // All five machines mount once, at load (with <Preload> compiling their
   // shaders then) — building one mid-scroll cost a ~400ms frame. Only the
   // focused machine and its neighbours are drawn (`visible`); the rest sit
   // hidden and static, which costs nothing per frame. Only the machine in
-  // focus floats + animates — unless `still` (reduced-motion), where nothing
-  // floats or animates at all.
+  // focus floats + animates.
   const focus = useFactory((s) => Math.round(s.progress * (MACHINES.length - 1)));
   return (
     <>
@@ -1082,13 +1081,13 @@ export function Stations({ still = false }) {
           <group key={machine.id} position={[0, 0, machine.z]}>
             <group visible={dist <= 1}>
               <Float
-                enabled={dist === 0 && !still}
+                enabled={dist === 0}
                 speed={0.7}
                 rotationIntensity={0.04}
                 floatIntensity={0.09}
                 floatingRange={[-0.03, 0.03]}
               >
-                <Machine active={dist <= 1 && !still} />
+                <Machine active={dist <= 1} />
               </Float>
             </group>
             {/* station marker on the floor */}

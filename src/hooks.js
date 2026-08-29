@@ -15,31 +15,21 @@ export function useMediaQuery(query) {
   return matches;
 }
 
-export const useReducedMotion = () =>
-  useMediaQuery('(prefers-reduced-motion: reduce)');
-
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
-// `lite` runs the 3D scene stripped down, `flat` is the static 2D backdrop
-// (only when WebGL genuinely can't run). Phones get `lite` + `portrait`
-// (centreline camera). `still` keeps the 3D but freezes every autonomous
-// animation — used for prefers-reduced-motion, which on iOS also covers Low
-// Power Mode. Those visitors were getting the flat fallback before.
-const PARAMS = new URLSearchParams(
+// `lite` runs the 3D scene stripped down, `flat` is the static 2D backdrop —
+// only when WebGL genuinely can't run. Phones get `lite` + `portrait` (the
+// centreline camera path). The 3D runs for everyone else, animation and all;
+// prefers-reduced-motion is deliberately not gated here (site owner's call).
+const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
-);
-const TIER_OVERRIDE = PARAMS.get('tier'); // ?tier=flat|lite|full
-const STILL_OVERRIDE = PARAMS.has('still'); // ?still — force the frozen scene
+).get('tier');
 
 export function useDeviceTier() {
-  const reduced = useReducedMotion() || STILL_OVERRIDE;
   const small = useMediaQuery('(max-width: 720px)');
-  const [state, setState] = useState(() => ({
-    tier: TIER_OVERRIDE || 'full',
-    still: STILL_OVERRIDE,
-  }));
+  const [tier, setTier] = useState(TIER_OVERRIDE || 'full');
 
   useEffect(() => {
-    if (TIER_OVERRIDE) return setState({ tier: TIER_OVERRIDE, still: reduced });
+    if (TIER_OVERRIDE) return; // ?tier=flat|lite|full forces a mode for testing
 
     let gl = null;
     try {
@@ -52,18 +42,14 @@ export function useDeviceTier() {
 
     // three r0.171 is WebGL2-only, so no context (or a genuinely weak device)
     // means the static 2D backdrop — there's no lighter 3D path to offer.
-    if (!gl || cores <= 2 || mem <= 2) {
-      setState({ tier: 'flat', still: reduced });
-      return;
-    }
+    if (!gl || cores <= 2 || mem <= 2) return setTier('flat');
     gl.getExtension('WEBGL_lose_context')?.loseContext();
 
-    // capable: phones + modest laptops get the stripped scene, the rest full.
-    const tier = small || cores <= 4 || mem <= 4 ? 'lite' : 'full';
-    setState({ tier, still: reduced });
-  }, [reduced, small]);
+    // phones + modest laptops get the stripped scene, the rest full.
+    setTier(small || cores <= 4 || mem <= 4 ? 'lite' : 'full');
+  }, [small]);
 
-  return state;
+  return tier;
 }
 
 // Pointer position in normalised [-1, 1] space. `tx/ty` is the live target;

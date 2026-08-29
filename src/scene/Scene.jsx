@@ -40,34 +40,24 @@ const mix = (a, b, t) => a + (b - a) * t;
 // On mount the camera eases `wide` -> keyframe 0 (~2.4s). After that it tracks
 // `progress` along `keyframes`, heavily damped, so each machine drifts past as
 // you scroll. Languid, dim, not a tour. Portrait phones pass the centreline
-// path (see data.js) instead of the landscape one. `still` (reduced-motion):
-// no push-in, no idle drift, no pointer parallax, no damping — the camera just
-// snaps to the scroll position so nothing moves on its own.
-function CameraRig({ pointer, keyframes, wide, still }) {
-  const look = useRef(new THREE.Vector3(...(still ? keyframes[0].look : wide.look)));
-  const intro = useRef(still ? 1 : 0);
+// path (see data.js) instead of the landscape one.
+function CameraRig({ pointer, keyframes, wide }) {
+  const look = useRef(new THREE.Vector3(...wide.look));
+  const intro = useRef(0);
 
   useFrame((state, dt) => {
-    if (!still) intro.current = Math.min(1, intro.current + dt / 2.4);
+    intro.current = Math.min(1, intro.current + dt / 2.4);
     const fi = smooth(intro.current);
     const { progress } = useFactory.getState();
 
-    let px = 0;
-    let py = 0;
-    let drx = 0;
-    let dry = 0;
-    if (!still) {
-      // ease the pointer toward its latest target here, in the render loop, so
-      // the parallax smoothing pauses with everything else when the tab hides
-      const ptr = pointer.current;
-      ptr.x += (ptr.tx - ptr.x) * 0.08;
-      ptr.y += (ptr.ty - ptr.y) * 0.08;
-      px = ptr.x;
-      py = ptr.y;
-      const t = state.clock.elapsedTime;
-      drx = Math.sin(t * 0.24) * 0.03;
-      dry = Math.sin(t * 0.19) * 0.025;
-    }
+    // ease the pointer toward its latest target here, in the render loop, so
+    // the parallax smoothing pauses with everything else when the tab hides
+    const ptr = pointer.current;
+    ptr.x += (ptr.tx - ptr.x) * 0.08;
+    ptr.y += (ptr.ty - ptr.y) * 0.08;
+    const px = ptr.x;
+    const py = ptr.y;
+    const t = state.clock.elapsedTime;
 
     // interpolate the keyframe path by scroll progress
     const seg = progress * (keyframes.length - 1);
@@ -80,16 +70,22 @@ function CameraRig({ pointer, keyframes, wide, still }) {
     const tp = (k) => mix(wide.pos[k], mix(a.pos[k], b.pos[k], f), fi);
     const tl = (k) => mix(wide.look[k], mix(a.look[k], b.look[k], f), fi);
 
-    const posTarget = [tp(0) + px * 0.24 + drx, tp(1) - py * 0.16 + dry, tp(2)];
-    const lookTarget = [tl(0) + px * 0.13, tl(1) - py * 0.1, tl(2)];
-
-    if (still) {
-      state.camera.position.set(...posTarget);
-      look.current.set(...lookTarget);
-    } else {
-      easing.damp3(state.camera.position, posTarget, 0.75, dt);
-      easing.damp3(look.current, lookTarget, 0.85, dt);
-    }
+    easing.damp3(
+      state.camera.position,
+      [
+        tp(0) + px * 0.24 + Math.sin(t * 0.24) * 0.03,
+        tp(1) - py * 0.16 + Math.sin(t * 0.19) * 0.025,
+        tp(2),
+      ],
+      0.75,
+      dt,
+    );
+    easing.damp3(
+      look.current,
+      [tl(0) + px * 0.13, tl(1) - py * 0.1, tl(2)],
+      0.85,
+      dt,
+    );
     state.camera.lookAt(look.current);
   });
 
@@ -265,38 +261,7 @@ function PauseWhenHidden({ setFrameloop }) {
   return null;
 }
 
-// `still` mode runs the canvas on-demand: render only when the scroll position
-// changes (or on resize), never on a clock. Nothing animates on its own, so the
-// loop can sit idle. Each kick renders a short burst of frames — a couple of the
-// camera-following rigs (fill light, station lights) update one frame behind the
-// camera, so a single frame would leave them lagging after a fast scroll.
-function InvalidateOnScroll() {
-  const invalidate = useThree((s) => s.invalidate);
-  useEffect(() => {
-    let raf = 0;
-    const burst = (n) => {
-      invalidate();
-      if (n > 0) raf = requestAnimationFrame(() => burst(n - 1));
-    };
-    const kick = () => {
-      cancelAnimationFrame(raf);
-      burst(3);
-    };
-    kick();
-    const settle = [setTimeout(kick, 150), setTimeout(kick, 700)];
-    const unsub = useFactory.subscribe(kick);
-    window.addEventListener('resize', kick);
-    return () => {
-      cancelAnimationFrame(raf);
-      settle.forEach(clearTimeout);
-      unsub();
-      window.removeEventListener('resize', kick);
-    };
-  }, [invalidate]);
-  return null;
-}
-
-export default function Scene({ tier, portrait = false, still = false }) {
+export default function Scene({ tier, portrait = false }) {
   const pointer = usePointer();
   // start optimistic, let PerformanceMonitor walk quality down if the GPU
   // can't keep up — smoother than shipping a permanently heavy scene.
@@ -306,11 +271,7 @@ export default function Scene({ tier, portrait = false, still = false }) {
   const [dpr, setDpr] = useState(1);
   const [fx, setFx] = useState(true);
   const [frameloop, setFrameloop] = useState(() =>
-    still
-      ? 'demand'
-      : typeof document !== 'undefined' && document.hidden
-        ? 'never'
-        : 'always',
+    typeof document !== 'undefined' && document.hidden ? 'never' : 'always',
   );
 
   const wide = portrait ? CAMERA_WIDE_PORTRAIT : CAMERA_WIDE;
@@ -335,33 +296,22 @@ export default function Scene({ tier, portrait = false, still = false }) {
         far: portrait ? 90 : 130,
       }}
     >
-      {still ? (
-        <InvalidateOnScroll />
-      ) : (
-        <>
-          <PauseWhenHidden setFrameloop={setFrameloop} />
-          <PerformanceMonitor
-            onDecline={() => {
-              setDpr((d) => Math.max(0.75, d - 0.35));
-              setFx(false);
-            }}
-            onFallback={() => {
-              setDpr(0.75);
-              setFx(false);
-            }}
-          />
-        </>
-      )}
+      <PauseWhenHidden setFrameloop={setFrameloop} />
+      <PerformanceMonitor
+        onDecline={() => {
+          setDpr((d) => Math.max(0.75, d - 0.35));
+          setFx(false);
+        }}
+        onFallback={() => {
+          setDpr(0.75);
+          setFx(false);
+        }}
+      />
 
       <color attach="background" args={[PALETTE.void]} />
       {/* portrait rides further back down the centreline — pull the haze in so
           the focused machine still separates and the far corridor stays dim */}
       <fog attach="fog" args={[PALETTE.void, portrait ? 9 : 7, portrait ? 40 : 36]} />
-
-      {/* CameraRig first so its useFrame moves the camera before the rigs that
-          follow it (fill + station lights) read the position — matters in
-          `still`/on-demand mode where there's no next frame to catch up */}
-      <CameraRig pointer={pointer} keyframes={keyframes} wide={wide} still={still} />
 
       {/* portrait shows the machines more head-on and with less scrim in front
           — lift the fill a little so they read as objects, not silhouettes */}
@@ -376,10 +326,10 @@ export default function Scene({ tier, portrait = false, still = false }) {
       <StudioEnv />
 
       <Facility />
-      <Stations still={still} />
-      {!still && <SpineFlow tier={tier} />}
+      <Stations />
+      <SpineFlow tier={tier} />
 
-      {tier === 'full' && !still && (
+      {tier === 'full' && (
         <Sparkles
           count={22}
           scale={[16, 7, FACILITY_LENGTH]}
@@ -391,6 +341,7 @@ export default function Scene({ tier, portrait = false, still = false }) {
         />
       )}
 
+      <CameraRig pointer={pointer} keyframes={keyframes} wide={wide} />
       {fx && <Effects full={tier === 'full'} />}
 
       {/* compile every machine's shaders/geometry during the initial load so

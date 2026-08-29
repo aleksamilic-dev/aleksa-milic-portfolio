@@ -18,7 +18,7 @@ const INSPECT =
     : null;
 
 export default function App() {
-  const { tier, still } = useDeviceTier();
+  const tier = useDeviceTier();
   const portrait = useMediaQuery('(max-width: 720px)');
   const section = useFactory((s) => s.section);
 
@@ -41,7 +41,7 @@ export default function App() {
           <Fallback section={section} />
         ) : (
           <Suspense fallback={null}>
-            <Scene tier={tier} portrait={portrait} still={still} />
+            <Scene tier={tier} portrait={portrait} />
           </Suspense>
         )}
       </div>
