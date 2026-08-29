@@ -18,12 +18,13 @@ import { Band, BoltRing, Gear, Node, Pipe, Screen, cast, steel } from './primiti
 const GAUGE_H = 1.4; // level-gauge travel, shared by the render + fill animation
 const GAUGE_FOOT = -0.8;
 
-export function IngestionDock() {
+export function IngestionDock({ active = true }) {
   const rotor = useRef();
   const grille = useRef();
   const fill = useRef();
   const valve = useRef();
   useFrame(({ clock }) => {
+    if (!active) return;
     const t = clock.elapsedTime;
     if (rotor.current) rotor.current.rotation.y = t * 0.3;
     if (grille.current)
@@ -40,7 +41,6 @@ export function IngestionDock() {
 
   return (
     <group>
-      <pointLight position={[1.4, 3.2, 2.4]} intensity={4} distance={11} color={PALETTE.amberBright} />
 
       {/* base pad */}
       <mesh position={[0, -0.4, 0]}>
@@ -281,11 +281,12 @@ function Ladder({ position = [0, 0, 0], rotation = [0, 0, 0], y0 = 0, y1 = 3, ru
 // intake end, tumbles through the glowing core, and leaves the tapered outlet
 // refined. A gear-motor turns the drum on its trunnion rollers.
 // ---------------------------------------------------------------------------
-export function ProcessingHall() {
+export function ProcessingHall({ active = true }) {
   const drum = useRef();
   const coreA = useRef();
   const coreB = useRef();
   useFrame(({ clock }) => {
+    if (!active) return;
     const t = clock.elapsedTime;
     if (drum.current) drum.current.rotation.x = t * 0.42;
     const pulse = 1.15 + Math.sin(t * 3) * 0.45;
@@ -317,13 +318,13 @@ export function ProcessingHall() {
       ))}
 
       {/* rotating reactor shell — turns on its X axis, riding the trunnions.
-          Faintly translucent so the two-tone core reads through the wall. */}
+          Faintly translucent so the two-tone core reads through the wall;
+          front-face only (the hero camera never sees the far wall). */}
       <group ref={drum}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[1.14, 1.14, 3.3, 40, 1, true]} />
+          <cylinderGeometry args={[1.14, 1.14, 3.3, 28, 1, true]} />
           <meshStandardMaterial
             {...steel('light', { roughness: 0.32 })}
-            side={THREE.DoubleSide}
             transparent
             opacity={0.86}
           />
@@ -377,9 +378,6 @@ export function ProcessingHall() {
         <cylinderGeometry args={[0.64, 0.46, 2.5, 24]} />
         <meshStandardMaterial color={PALETTE.blueBright} emissive={PALETTE.blueBright} emissiveIntensity={1.4} toneMapped={false} />
       </mesh>
-      <pointLight position={[-1.45, 0, 0]} color={PALETTE.amber} intensity={2.6} distance={5} />
-      <pointLight position={[0.7, 0, 0]} color={PALETTE.blueBright} intensity={3} distance={7} />
-
       {/* intake end (−X): a heavy flanged hub with a raw-feed hopper dropping in */}
       <group position={[-1.7, 0, 0]}>
         <mesh rotation={[0, Math.PI / 2, 0]}>
@@ -459,9 +457,10 @@ export function ProcessingHall() {
 // ---------------------------------------------------------------------------
 // 03 — Storage Vault : a medallion rack, bronze / silver / gold tiers
 // ---------------------------------------------------------------------------
-export function StorageVault() {
+export function StorageVault({ active = true }) {
   const cells = useRef([]);
   useFrame(({ clock }) => {
+    if (!active) return;
     const t = clock.elapsedTime;
     cells.current.forEach((c, i) => {
       if (c) c.material.emissiveIntensity = 0.2 + Math.abs(Math.sin(t * 0.8 + i * 1.3)) * 1.3;
@@ -484,8 +483,6 @@ export function StorageVault() {
     // a compact cabinet in the left lane, face (+Z) turned back up the
     // corridor so the camera reads it head-on as it descends past
     <group position={[-1.75, -0.35, -0.4]}>
-      <pointLight position={[1.2, 2.6, 2.8]} intensity={4} distance={9} color="#cfe0ee" />
-
       {/* rack frame: side uprights, shelves, plinth */}
       {[-1.2, 1.2].map((x) => (
         <mesh key={x} position={[x, 1.55, -0.1]}>
@@ -628,13 +625,14 @@ function Wing({ top, bottom }) {
   );
 }
 
-export function ControlRoom() {
+export function ControlRoom({ active = true }) {
   const bars = useRef([]);
   const bars2 = useRef([]);
   const wave = useRef();
   const ticker = useRef();
   const blip = useRef();
   useFrame(({ clock }) => {
+    if (!active) return;
     const t = clock.elapsedTime;
     const grow = (arr, sp) =>
       arr.forEach((b, i) => {
@@ -839,9 +837,6 @@ export function ControlRoom() {
         color={PALETTE.steelDark}
         emissive={0}
       />
-
-      <pointLight position={[0, 0.3, 1.9]} color={PALETTE.blue} intensity={2.6} distance={7} />
-      <pointLight position={[2.0, -1.4, 1.4]} color={PALETTE.amberBright} intensity={1.1} distance={3} />
     </group>
   );
 }
@@ -895,13 +890,14 @@ function Crate({ size = 0.8, w = size * 1.1, h = size, d = size * 1.35, lit = fa
   );
 }
 
-export function ShippingDock() {
+export function ShippingDock({ active = true }) {
   const crate = useRef();
   const gate = useRef();
   const scan = useRef();
   const belt = useRef();
   const drive = useRef();
   useFrame(({ clock }) => {
+    if (!active) return;
     const t = clock.elapsedTime;
     if (crate.current) {
       const p = (t * 0.12) % 1;
@@ -1042,7 +1038,6 @@ export function ShippingDock() {
           <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.25} roughness={0.5} />
         </mesh>
         <BoltRing count={4} radius={1.7} r={0.05} axis="z" position={[0, 0, 0.32]} />
-        <pointLight position={[0, 0, 1.7]} color={PALETTE.blueBright} intensity={4.4} distance={10} />
       </group>
 
       {/* staged containers on the platform, either side of the belt */}
@@ -1071,28 +1066,31 @@ const MACHINE_PARTS = [
 ];
 
 export function Stations() {
-  // The camera glides down the corridor as you scroll, so mount the machine
-  // it's near plus its neighbours; the rest stay bare floor markers. The
-  // selector returns an int, so this only re-renders ~5 times per scroll.
+  // All five machines mount once, at load (with <Preload> compiling their
+  // shaders then) — building one mid-scroll cost a ~400ms frame. Only the
+  // focused machine and its neighbours are drawn (`visible`); the rest sit
+  // hidden and static, which costs nothing per frame. Only the machine in
+  // focus floats + animates.
   const focus = useFactory((s) => Math.round(s.progress * (MACHINES.length - 1)));
   return (
     <>
       {MACHINES.map((machine, i) => {
         const Machine = MACHINE_PARTS[i];
-        const inFrame = Math.abs(i - focus) <= 1;
+        const dist = Math.abs(i - focus);
         return (
           <group key={machine.id} position={[0, 0, machine.z]}>
-            {inFrame && (
+            <group visible={dist <= 1}>
               <Float
+                enabled={dist === 0}
                 speed={0.7}
                 rotationIntensity={0.04}
                 floatIntensity={0.09}
                 floatingRange={[-0.03, 0.03]}
               >
-                <Machine />
+                <Machine active={dist <= 1} />
               </Float>
-            )}
-            {/* station marker on the floor — cheap, always on */}
+            </group>
+            {/* station marker on the floor */}
             <mesh position={[0, -1.47, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <ringGeometry args={[1.7, 1.78, 48]} />
               <meshBasicMaterial color={PALETTE.blueDeep} toneMapped={false} transparent opacity={0.3} />

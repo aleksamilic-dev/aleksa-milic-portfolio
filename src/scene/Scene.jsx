@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Environment, Grid, Lightformer, PerformanceMonitor, Sparkles } from '@react-three/drei';
+import {
+  Environment,
+  Grid,
+  Lightformer,
+  PerformanceMonitor,
+  Preload,
+  Sparkles,
+} from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { easing } from 'maath';
-import { CAMERA_KEYFRAMES, CAMERA_WIDE, PALETTE, SPINE } from '../data.js';
+import { CAMERA_KEYFRAMES, CAMERA_WIDE, MACHINES, PALETTE, SPINE, STATION_GAP } from '../data.js';
 import { useFactory } from '../store.js';
 import { usePointer } from '../hooks.js';
 import { Beam, Strut } from './primitives.jsx';
@@ -94,6 +101,52 @@ function EntranceKey() {
   );
 }
 
+// Per-station key light: a world offset from the station origin, plus colour
+// and reach. Rendered as a *fixed* pool of three lights (below) that follow the
+// nearest machines — a constant light count means materials never recompile
+// their shaders mid-scroll (a machine-owned light popping in cost a ~400ms
+// frame). Values carried over from the old per-machine point lights.
+const STATION_LIGHTS = [
+  { off: [1.4, 3.2, 2.4], color: new THREE.Color(PALETTE.amberBright), intensity: 4, distance: 11 },
+  { off: [-1.1, 1.25, 0.4], color: new THREE.Color(PALETTE.amberBright), intensity: 3.4, distance: 7 },
+  { off: [-0.55, 2.25, 2.4], color: new THREE.Color('#cfe0ee'), intensity: 4, distance: 9 },
+  { off: [0, 1.55, 2.1], color: new THREE.Color(PALETTE.blue), intensity: 3, distance: 8 },
+  { off: [0, 0.35, -2.8], color: new THREE.Color(PALETTE.blueBright), intensity: 4.4, distance: 10 },
+];
+
+function StationLights() {
+  const a = useRef();
+  const b = useRef();
+  const c = useRef();
+  useFrame(() => {
+    const refs = [a.current, b.current, c.current];
+    const { progress } = useFactory.getState();
+    const focus = Math.round(progress * (MACHINES.length - 1));
+    for (let k = 0; k < 3; k++) {
+      const light = refs[k];
+      if (!light) continue;
+      const si = focus - 1 + k; // the three machines that can be on screen
+      const cfg = STATION_LIGHTS[si];
+      if (!cfg) {
+        light.intensity = 0;
+        continue;
+      }
+      const z = -si * STATION_GAP;
+      light.position.set(cfg.off[0], cfg.off[1], z + cfg.off[2]);
+      light.color.copy(cfg.color);
+      light.distance = cfg.distance;
+      light.intensity = cfg.intensity * (si === focus ? 1 : 0.45);
+    }
+  });
+  return (
+    <>
+      <pointLight ref={a} intensity={0} />
+      <pointLight ref={b} intensity={0} />
+      <pointLight ref={c} intensity={0} />
+    </>
+  );
+}
+
 function Facility() {
   const trusses = useMemo(() => {
     const out = [];
@@ -176,16 +229,17 @@ function StudioEnv() {
 
 function Effects({ full }) {
   // multisampling handles edge AA and, importantly, sidesteps the
-  // depth-blit warning postprocessing throws at multisampling={0}.
+  // depth-blit warning postprocessing throws at multisampling={0}. 2x is
+  // plenty for a soft, dim backdrop — 4x was pure cost here.
   return (
-    <EffectComposer disableNormalPass multisampling={full ? 4 : 2} stencilBuffer={false}>
+    <EffectComposer disableNormalPass multisampling={2} stencilBuffer={false}>
       <Bloom
         mipmapBlur
         intensity={full ? 0.42 : 0.3}
         luminanceThreshold={0.42}
         luminanceSmoothing={0.3}
         radius={0.62}
-        height={full ? 300 : 220}
+        height={full ? 240 : 200}
       />
       <Vignette offset={0.3} darkness={0.55} eskil={false} />
     </EffectComposer>
@@ -220,7 +274,10 @@ export default function Scene({ tier }) {
   const pointer = usePointer();
   // start optimistic, let PerformanceMonitor walk quality down if the GPU
   // can't keep up — smoother than shipping a permanently heavy scene.
-  const [dpr, setDpr] = useState(tier === 'full' ? 1.25 : 1);
+  // The canvas is a dim backdrop behind a scrim, fog, vignette and grain — it
+  // renders at CSS resolution (dpr 1) even on HiDPI. PerformanceMonitor can
+  // still walk it down further on weak GPUs.
+  const [dpr, setDpr] = useState(1);
   const [fx, setFx] = useState(true);
   const [frameloop, setFrameloop] = useState(() =>
     typeof document !== 'undefined' && document.hidden ? 'never' : 'always',
@@ -253,13 +310,13 @@ export default function Scene({ tier }) {
       <color attach="background" args={[PALETTE.void]} />
       <fog attach="fog" args={[PALETTE.void, 7, 36]} />
 
-      <ambientLight intensity={0.28} />
-      <hemisphereLight intensity={0.6} color="#3a5064" groundColor="#06090d" />
+      <ambientLight intensity={0.3} />
+      <hemisphereLight intensity={0.62} color="#3a5064" groundColor="#06090d" />
       <directionalLight position={[-6, 9, 4]} intensity={1.2} color="#dbe8f5" />
       <directionalLight position={[7, 4, -6]} intensity={0.45} color={PALETTE.blue} />
       <CameraFill />
       <EntranceKey />
-      <pointLight position={[0, 4, SPINE.endZ + 6]} intensity={4} distance={22} color={PALETTE.blue} />
+      <StationLights />
 
       <StudioEnv />
 
@@ -281,6 +338,10 @@ export default function Scene({ tier }) {
 
       <CameraRig pointer={pointer} />
       {fx && <Effects full={tier === 'full'} />}
+
+      {/* compile every machine's shaders/geometry during the initial load so
+          none of it stalls a frame when it scrolls into view */}
+      <Preload all />
     </Canvas>
   );
 }
