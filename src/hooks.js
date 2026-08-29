@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useFactory } from './store.js';
 
 // Live-updating match for a media query.
 export function useMediaQuery(query) {
@@ -20,28 +19,27 @@ export const useReducedMotion = () =>
   useMediaQuery('(prefers-reduced-motion: reduce)');
 
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
-// `lite` runs the 3D scene stripped down, `flat` falls back to the calm 2D
-// backdrop. Reduced-motion or the manual "calm" toggle both force `flat`.
+// `lite` runs the 3D scene stripped down, `flat` falls back to the static 2D
+// backdrop. Reduced-motion forces `flat`.
 const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
 ).get('tier');
 
 export function useDeviceTier() {
   const reduced = useReducedMotion();
-  const calm = useFactory((s) => s.calmMode);
   const small = useMediaQuery('(max-width: 720px)');
   const [tier, setTier] = useState(TIER_OVERRIDE || 'full');
 
   useEffect(() => {
     if (TIER_OVERRIDE) return; // ?tier=flat|lite|full forces a mode for testing
-    if (reduced || calm) return setTier('flat');
+    if (reduced) return setTier('flat');
     const cores = navigator.hardwareConcurrency || 8;
     const mem = navigator.deviceMemory || 8;
     const gl = document.createElement('canvas').getContext('webgl2');
     if (!gl || small || cores <= 2 || mem <= 2) return setTier('flat');
     if (cores <= 4 || mem <= 4) return setTier('lite');
     setTier('full');
-  }, [reduced, calm, small]);
+  }, [reduced, small]);
 
   return tier;
 }

@@ -78,10 +78,7 @@ a {
 .hero__eyebrow,
 .hero__tagline,
 .hero__cue,
-.nav__label,
-.nav__id,
 .rail__label,
-.corner,
 .section__kicker,
 .project__year,
 .project__facts dt,
@@ -91,10 +88,7 @@ a {
 .xp__period,
 .xp__org,
 .contact__socials a,
-.contact__note,
 .contact__foot,
-.index-btn,
-.calm-btn,
 .btn {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -302,130 +296,6 @@ a {
   border-left: 1px solid var(--hair);
 }
 
-.topbar__tools {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.calm-btn,
-.index-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: 1px solid var(--hair);
-  border-radius: 2px;
-  padding: 9px 12px;
-  color: var(--ink-mute);
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
-}
-
-.index-btn {
-  color: var(--ink);
-}
-
-.calm-btn:hover,
-.index-btn:hover {
-  border-color: var(--amber);
-  background: rgba(255, 157, 77, 0.08);
-  color: var(--ink);
-}
-
-.calm-btn[aria-pressed='true'] {
-  border-color: var(--amber);
-  color: var(--amber);
-}
-
-/* ===========================================================================
-   NAV PANEL
-   =========================================================================== */
-.nav {
-  position: fixed;
-  z-index: 25;
-  top: calc(var(--topbar-h) + 14px);
-  right: var(--gutter);
-  width: 270px;
-  padding: 20px;
-  background: rgba(12, 17, 23, 0.96);
-  border: 1px solid var(--panel-line);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px);
-  transform-origin: top right;
-  transform: translateY(-10px) scale(0.97);
-  opacity: 0;
-  visibility: hidden;
-  transition: 0.32s var(--ease);
-}
-
-.nav.is-open {
-  transform: none;
-  opacity: 1;
-  visibility: visible;
-}
-
-.nav__label {
-  margin: 0 0 14px;
-  color: var(--ink-faint);
-}
-
-.nav__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nav__list button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 0;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--hair);
-  color: var(--ink-mute);
-  text-align: left;
-  font-size: 13px;
-  transition: color 0.2s, padding-left 0.2s;
-}
-
-.nav__list li:last-child button {
-  border-bottom: 0;
-}
-
-.nav__id {
-  font-size: 10px;
-  color: var(--blue);
-}
-
-.nav__name {
-  flex: 1;
-}
-
-.nav__go {
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: 0.2s var(--ease);
-}
-
-.nav__list button:hover,
-.nav__list button.is-active {
-  color: var(--ink);
-  padding-left: 6px;
-}
-
-.nav__list button:hover .nav__go,
-.nav__list button.is-active .nav__go {
-  opacity: 1;
-  transform: none;
-  color: var(--amber);
-}
-
-.nav__list button.is-active .nav__id {
-  color: var(--amber);
-}
-
 /* ===========================================================================
    PROGRESS RAIL
    =========================================================================== */
@@ -514,32 +384,21 @@ a {
 }
 
 /* ===========================================================================
-   SOCIAL CORNER
+   HEADER SOCIAL LINKS
    =========================================================================== */
-.corner {
-  position: fixed;
-  z-index: 15;
-  left: var(--gutter);
-  bottom: 20px;
+.topbar__social {
   display: flex;
   gap: 16px;
-  color: var(--ink-faint);
-  transition: opacity 0.3s var(--ease), visibility 0.3s;
 }
 
-.corner.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.corner a {
+.topbar__social a {
   color: var(--ink-mute);
   display: grid;
   place-items: center;
   transition: color 0.2s, transform 0.2s;
 }
 
-.corner a:hover {
+.topbar__social a:hover {
   color: var(--amber);
   transform: translateY(-2px);
 }
@@ -583,20 +442,6 @@ a {
 
 .btn--primary:hover svg {
   transform: translate(2px, -2px);
-}
-
-.btn--solid {
-  justify-content: center;
-  padding: 13px;
-  color: #10151a;
-  background: var(--amber);
-  border: 0;
-  letter-spacing: 0.14em;
-}
-
-.btn--solid:hover {
-  background: var(--amber-bright);
-  gap: 12px;
 }
 
 /* ===========================================================================
@@ -1006,33 +851,66 @@ a {
 /* ===========================================================================
    CONTACT
    =========================================================================== */
+.section--contact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 100svh;
+  padding-bottom: 7vh;
+}
+
+.section--contact .section__head {
+  margin-bottom: 5vh;
+}
+
 .contact {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: 46px;
-  align-items: start;
-  max-width: min(740px, 66vw);
+  max-width: var(--text-col);
 }
 
 .contact__blurb {
-  margin: 0 0 24px;
+  margin: 0 0 32px;
   font-size: clamp(15px, 1.5vw, 18px);
   line-height: 1.6;
   color: var(--ink-mute);
-  max-width: 40ch;
+  max-width: 42ch;
+}
+
+.contact__email {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: clamp(16px, 1.9vw, 21px);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--amber);
+  transition: gap 0.2s var(--ease);
+}
+
+.contact__email svg {
+  color: var(--amber);
+  transition: transform 0.2s var(--ease);
+}
+
+.contact__email:hover {
+  gap: 15px;
+}
+
+.contact__email:hover svg {
+  transform: translate(2px, -2px);
 }
 
 .contact__socials {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 26px;
+  gap: 28px;
+  margin-top: 36px;
 }
 
 .contact__socials a {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   color: var(--ink-mute);
   letter-spacing: 0.06em;
   transition: color 0.2s;
@@ -1042,44 +920,9 @@ a {
   color: var(--amber);
 }
 
-.contact__form {
-  display: grid;
-  gap: 10px;
-}
-
-.contact__form input,
-.contact__form textarea {
-  width: 100%;
-  background: rgba(6, 10, 14, 0.85);
-  border: 1px solid var(--hair);
-  padding: 12px;
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  outline: none;
-  resize: vertical;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.contact__form input:focus,
-.contact__form textarea:focus {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 3px rgba(255, 157, 77, 0.14);
-}
-
-.contact__form input::placeholder,
-.contact__form textarea::placeholder {
-  color: var(--ink-faint);
-}
-
-.contact__note {
-  color: var(--ink-faint);
-  letter-spacing: 0.08em;
-}
-
 .contact__foot {
-  margin: 13vh 0 0;
+  margin-top: auto;
+  padding-top: 12vh;
   color: var(--ink-faint);
   letter-spacing: 0.1em;
 }
@@ -1222,10 +1065,6 @@ a {
     font-size: 8px;
     letter-spacing: 0.08em;
   }
-
-  .nav {
-    top: calc(var(--topbar-h) + 10px);
-  }
 }
 
 @media (max-width: 720px) {
@@ -1234,27 +1073,12 @@ a {
   }
 
   .rail,
-  .corner,
   .brand__sub {
     display: none;
   }
 
   .topbar {
     padding: 0 18px;
-  }
-
-  .calm-btn span {
-    display: none;
-  }
-
-  .calm-btn {
-    padding: 9px;
-  }
-
-  .nav {
-    left: 14px;
-    right: 14px;
-    width: auto;
   }
 
   .section--work,
@@ -1302,15 +1126,10 @@ a {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-
-  .contact {
-    grid-template-columns: 1fr;
-    gap: 8vh;
-  }
 }
 
 /* ===========================================================================
-   REDUCED MOTION + CALM MODE
+   REDUCED MOTION
    =========================================================================== */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -1330,14 +1149,4 @@ a {
     opacity: 1 !important;
     transform: none !important;
   }
-}
-
-.app[data-calm] [data-reveal] {
-  opacity: 1;
-  transform: none;
-}
-
-.app[data-calm] .brand__mark i,
-.app[data-calm] .hero__cue svg {
-  animation: none;
 }

@@ -19,7 +19,6 @@ const INSPECT =
 
 export default function App() {
   const tier = useDeviceTier();
-  const calm = useFactory((s) => s.calmMode);
   const section = useFactory((s) => s.section);
 
   if (INSPECT !== null) {
@@ -35,7 +34,7 @@ export default function App() {
   }
 
   return (
-    <div className="app" data-tier={tier} data-calm={calm || undefined} id="top">
+    <div className="app" data-tier={tier} id="top">
       <div className="canvas-wrap">
         {tier === 'flat' ? (
           <Fallback section={section} />

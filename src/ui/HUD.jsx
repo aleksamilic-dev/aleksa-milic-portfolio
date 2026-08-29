@@ -10,17 +10,7 @@ import {
   SKILLS,
   SOCIALS,
 } from '../data.js';
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  ExternalLink,
-  Menu,
-  Send,
-  SOCIAL_ICONS,
-  Waves,
-  X,
-} from './icons.js';
+import { ArrowDown, ArrowUpRight, ExternalLink, SOCIAL_ICONS } from './icons.js';
 import portrait from '../assets/aleksa.webp';
 
 const reduced = () =>
@@ -31,18 +21,12 @@ function jumpTo(id) {
   const target = document.getElementById(`sec-${id}`);
   if (!target) return;
   target.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
-  useFactory.getState().closeMenu();
 }
 
 // ---------------------------------------------------------------------------
 // Chrome
 // ---------------------------------------------------------------------------
 function TopBar() {
-  const menuOpen = useFactory((s) => s.menuOpen);
-  const toggleMenu = useFactory((s) => s.toggleMenu);
-  const calm = useFactory((s) => s.calmMode);
-  const toggleCalm = useFactory((s) => s.toggleCalm);
-
   return (
     <header className="topbar">
       <button className="brand" onClick={() => jumpTo('hero')}>
@@ -55,51 +39,23 @@ function TopBar() {
         <span className="brand__sub">{HERO.role}</span>
       </button>
 
-      <div className="topbar__tools">
-        <button
-          className="calm-btn"
-          onClick={toggleCalm}
-          aria-pressed={calm}
-          title="Toggle background motion"
-        >
-          <Waves size={14} />
-          <span>{calm ? 'Motion off' : 'Calm'}</span>
-        </button>
-        <button
-          className="index-btn"
-          aria-expanded={menuOpen}
-          aria-controls="section-map"
-          onClick={toggleMenu}
-        >
-          {menuOpen ? <X size={15} /> : <Menu size={15} />}
-          <span>{menuOpen ? 'Close' : 'Sections'}</span>
-        </button>
+      <div className="topbar__social">
+        {SOCIALS.map((soc) => {
+          const Ico = SOCIAL_ICONS[soc.icon];
+          return (
+            <a
+              key={soc.label}
+              href={soc.href}
+              aria-label={soc.label}
+              target={soc.href.startsWith('http') ? '_blank' : undefined}
+              rel="noreferrer"
+            >
+              <Ico size={15} />
+            </a>
+          );
+        })}
       </div>
     </header>
-  );
-}
-
-function NavPanel() {
-  const menuOpen = useFactory((s) => s.menuOpen);
-  const active = useFactory((s) => s.section);
-  return (
-    <aside id="section-map" className={`nav ${menuOpen ? 'is-open' : ''}`}>
-      <p className="nav__label">Sections</p>
-      <ol className="nav__list">
-        {SECTIONS.map((s, i) => (
-          <li key={s.id}>
-            <button
-              className={i === active ? 'is-active' : ''}
-              onClick={() => jumpTo(s.id)}
-            >
-              <span className="nav__id">{s.num}</span>
-              <span className="nav__name">{s.nav}</span>
-              <ArrowRight size={13} className="nav__go" />
-            </button>
-          </li>
-        ))}
-      </ol>
-    </aside>
   );
 }
 
@@ -138,30 +94,6 @@ function ProgressRail() {
         </button>
       ))}
     </nav>
-  );
-}
-
-function SocialLinks() {
-  const active = useFactory((s) => s.section);
-  // the contact section has its own social list — don't double up
-  const hidden = active === SECTIONS.length - 1;
-  return (
-    <div className={`corner ${hidden ? 'is-hidden' : ''}`}>
-      {SOCIALS.map((soc) => {
-        const Ico = SOCIAL_ICONS[soc.icon];
-        return (
-          <a
-            key={soc.label}
-            href={soc.href}
-            aria-label={soc.label}
-            target={soc.href.startsWith('http') ? '_blank' : undefined}
-            rel="noreferrer"
-          >
-            <Ico size={15} />
-          </a>
-        );
-      })}
-    </div>
   );
 }
 
@@ -323,15 +255,6 @@ function SkillsExperience() {
 }
 
 function Contact() {
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const body = `From: ${f.get('name')} <${f.get('email')}>\n\n${f.get('message')}`;
-    window.location.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent(
-      'Portfolio enquiry',
-    )}&body=${encodeURIComponent(body)}`;
-  };
-
   return (
     <section id="sec-contact" className="section section--contact">
       <header className="section__head" data-reveal>
@@ -340,44 +263,23 @@ function Contact() {
       </header>
 
       <div className="contact" data-reveal>
-        <div className="contact__lead">
-          <p className="contact__blurb">{CONTACT.blurb}</p>
-          <a className="btn btn--primary" href={`mailto:${CONTACT.email}`}>
-            {CONTACT.email} <ArrowUpRight size={15} />
-          </a>
-          <div className="contact__socials">
-            {SOCIALS.filter((s) => s.icon !== 'mail').map((soc) => {
-              const Ico = SOCIAL_ICONS[soc.icon];
-              return (
-                <a key={soc.label} href={soc.href} target="_blank" rel="noreferrer">
-                  <Ico size={15} /> {soc.label}
-                </a>
-              );
-            })}
-          </div>
-        </div>
+        <p className="contact__blurb">{CONTACT.blurb}</p>
 
-        <form className="contact__form" onSubmit={onSubmit}>
-          <input name="name" aria-label="Your name" placeholder="Your name" required />
-          <input
-            name="email"
-            type="email"
-            aria-label="Email address"
-            placeholder="Email address"
-            required
-          />
-          <textarea
-            name="message"
-            aria-label="Message"
-            placeholder="What are you working on?"
-            rows="3"
-            required
-          />
-          <button type="submit" className="btn btn--solid">
-            Compose email <Send size={13} />
-          </button>
-          <span className="contact__note">Opens a draft in your email app.</span>
-        </form>
+        <a className="contact__email" href={`mailto:${CONTACT.email}`}>
+          {CONTACT.email}
+          <ArrowUpRight size={16} />
+        </a>
+
+        <div className="contact__socials">
+          {SOCIALS.filter((s) => s.icon !== 'mail').map((soc) => {
+            const Ico = SOCIAL_ICONS[soc.icon];
+            return (
+              <a key={soc.label} href={soc.href} target="_blank" rel="noreferrer">
+                <Ico size={15} /> {soc.label}
+              </a>
+            );
+          })}
+        </div>
       </div>
 
       <p className="contact__foot">
@@ -463,7 +365,6 @@ export default function HUD() {
   return (
     <>
       <TopBar />
-      <NavPanel />
       <ProgressRail />
 
       <main ref={viewport} className="viewport" onScroll={onScroll}>
@@ -472,8 +373,6 @@ export default function HUD() {
         <SkillsExperience />
         <Contact />
       </main>
-
-      <SocialLinks />
     </>
   );
 }
