@@ -192,25 +192,32 @@ export const EDUCATION = [
   },
 ];
 
+// `issuer` picks the brand mark shown on the card (see src/ui/brands.jsx);
+// `level` is the small tag beside it. Each renders as a card linking to the
+// public credential.
 export const CERTIFICATIONS = [
   {
     name: 'Microsoft Certified: SQL AI Developer Associate',
     issuer: 'Microsoft',
+    level: 'Associate',
     href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/972a8900a661e357',
   },
   {
     name: 'Microsoft Certified: Fabric Data Engineer Associate',
     issuer: 'Microsoft',
+    level: 'Associate',
     href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/2f8a1b129206564',
   },
   {
     name: 'Databricks Generative AI Fundamentals',
     issuer: 'Databricks',
+    level: 'Fundamentals',
     href: 'https://credentials.databricks.com/a19fc6fc-5a93-4121-be99-81a2e97cb347#acc.k7pDhwHX',
   },
   {
     name: 'Databricks Platform Fundamentals',
     issuer: 'Databricks',
+    level: 'Fundamentals',
     href: 'https://credentials.databricks.com/df903b21-ba0e-47cf-ad70-b3bfb4e866fb#acc.UPA5rqcN',
   },
 ];

@@ -13,6 +13,7 @@ import {
   SOCIALS,
 } from '../data.js';
 import { ArrowDown, ArrowUpRight, ExternalLink, SOCIAL_ICONS } from './icons.js';
+import { ISSUER_MARK } from './brands.jsx';
 import portrait from '../assets/aleksa.webp';
 
 const reduced = () =>
@@ -268,22 +269,33 @@ function SkillsExperience() {
         </div>
         <div className="ledger__col">
           <h3 className="ledger__label">Certifications</h3>
-          <ul>
-            {CERTIFICATIONS.map((c) => (
-              <li key={c.name}>
-                <h4>
-                  {c.href ? (
-                    <a href={c.href} target="_blank" rel="noreferrer">
-                      {c.name}
-                      <ExternalLink size={12} />
-                    </a>
-                  ) : (
-                    c.name
-                  )}
-                </h4>
-                <p className="ledger__org">{c.issuer}</p>
-              </li>
-            ))}
+          <ul className="certs">
+            {CERTIFICATIONS.map((c) => {
+              const Mark = ISSUER_MARK[c.issuer];
+              const Card = c.href ? 'a' : 'div';
+              return (
+                <li key={c.name}>
+                  <Card
+                    className="cert"
+                    {...(c.href
+                      ? { href: c.href, target: '_blank', rel: 'noreferrer' }
+                      : {})}
+                  >
+                    <span className="cert__mark" aria-hidden>
+                      {Mark ? <Mark /> : null}
+                    </span>
+                    <span className="cert__body">
+                      <span className="cert__name">{c.name}</span>
+                      <span className="cert__meta">
+                        <span className="cert__issuer">{c.issuer}</span>
+                        {c.level ? <span className="cert__level">{c.level}</span> : null}
+                      </span>
+                    </span>
+                    {c.href ? <ExternalLink className="cert__ext" size={13} /> : null}
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
