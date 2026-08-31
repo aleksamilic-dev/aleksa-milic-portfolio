@@ -161,11 +161,9 @@ export const SKILLS = [
 ];
 
 export const SOCIALS = [
+  { label: 'GitHub', href: 'https://github.com/aleksamilic-dev', icon: 'github' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/aleksa-milic', icon: 'linkedin' },
   { label: 'Email', href: 'mailto:aleksamilic2224@gmail.com', icon: 'mail' },
-  // GitHub intentionally omitted — the CV link (github.com/AsinaMilic) 404s.
-  // Add it back here once the handle is confirmed:
-  // { label: 'GitHub', href: 'https://github.com/<handle>', icon: 'github' },
 ];
 
 export const CONTACT = {
