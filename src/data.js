@@ -194,6 +194,11 @@ export const EDUCATION = [
 
 export const CERTIFICATIONS = [
   {
+    name: 'Microsoft Certified: SQL AI Developer Associate',
+    issuer: 'Microsoft',
+    href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/972a8900a661e357',
+  },
+  {
     name: 'Microsoft Certified: Fabric Data Engineer Associate',
     issuer: 'Microsoft',
     href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/2f8a1b129206564',
