@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useFactory } from '../store.js';
 import {
   ABOUT,
+  CERTIFICATIONS,
   CONTACT,
+  EDUCATION,
   EXPERIENCE,
   HERO,
   PROJECTS,
@@ -115,7 +117,7 @@ function ProfileCard() {
       </div>
       <div className="profile__meta">
         <span>{HERO.location}</span>
-        <span>Open to work</span>
+        <span>{HERO.status}</span>
       </div>
     </aside>
   );
@@ -249,6 +251,42 @@ function SkillsExperience() {
           </li>
         ))}
       </ol>
+
+      <div className="ledger" data-reveal>
+        <div className="ledger__col">
+          <h3 className="ledger__label">Education</h3>
+          <ul>
+            {EDUCATION.map((e) => (
+              <li key={e.degree}>
+                <span className="ledger__period">{e.period}</span>
+                <h4>{e.degree}</h4>
+                <p className="ledger__org">{e.org}</p>
+                <p className="ledger__note">{e.note}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="ledger__col">
+          <h3 className="ledger__label">Certifications</h3>
+          <ul>
+            {CERTIFICATIONS.map((c) => (
+              <li key={c.name}>
+                <h4>
+                  {c.href ? (
+                    <a href={c.href} target="_blank" rel="noreferrer">
+                      {c.name}
+                      <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    c.name
+                  )}
+                </h4>
+                <p className="ledger__org">{c.issuer}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }
@@ -345,6 +383,13 @@ export default function HUD() {
       return;
     }
 
+    // On a cold load the viewport can still be 0-height when this effect
+    // runs — that zeroes the reveal threshold in sample(), so the first
+    // screen (hero + profile card) stays hidden until the visitor scrolls.
+    // Re-sample once it has a real height, and on any later resize.
+    const resizeObserver = new ResizeObserver(() => onScroll());
+    resizeObserver.observe(root);
+
     const sections = [...root.querySelectorAll('.section')];
     const sectionObserver = new IntersectionObserver(
       (entries) => {
@@ -358,7 +403,10 @@ export default function HUD() {
     );
     sections.forEach((s) => sectionObserver.observe(s));
 
-    return () => sectionObserver.disconnect();
+    return () => {
+      resizeObserver.disconnect();
+      sectionObserver.disconnect();
+    };
   }, []);
 
   return (

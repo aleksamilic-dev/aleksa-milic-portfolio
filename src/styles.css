@@ -805,13 +805,13 @@ a {
 
 .xp {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-columns: 150px minmax(0, 1fr);
   gap: 22px;
 }
 
 .xp__period {
   color: var(--ink-faint);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   padding-top: 4px;
 }
 
@@ -839,6 +839,80 @@ a {
 .xp__body li {
   font-size: 13px;
   line-height: 1.5;
+  color: var(--ink-mute);
+}
+
+/* --- education + certifications ------------------------------------- */
+.ledger {
+  margin-top: 10vh;
+  max-width: var(--text-col);
+  display: flex;
+  flex-direction: column;
+  gap: 6vh;
+}
+
+.ledger__label {
+  margin: 0 0 22px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hair);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.ledger__col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ledger__col h4 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.ledger__col h4 a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: color 0.2s;
+}
+
+.ledger__col h4 a:hover {
+  color: var(--amber);
+}
+
+.ledger__col h4 svg {
+  flex: none;
+  color: var(--amber);
+}
+
+.ledger__period {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.ledger__org {
+  margin: 0;
+  color: var(--amber);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.ledger__note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--ink-mute);
 }
 
@@ -930,7 +1004,9 @@ a {
 .about,
 .xp__body li,
 .contact__blurb,
-.skills__group li {
+.skills__group li,
+.ledger__col h4,
+.ledger__note {
   text-shadow: 0 1px 14px rgba(6, 9, 13, 0.75), 0 1px 3px rgba(6, 9, 13, 0.6);
 }
 

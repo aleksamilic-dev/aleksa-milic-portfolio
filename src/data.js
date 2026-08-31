@@ -1,9 +1,10 @@
 // ---------------------------------------------------------------------------
 // Single source of truth: portfolio content + the ambient scene's layout.
 //
-// Text marked `TODO —` is scaffolding. Replace every one with a real specific
-// before this goes in front of a recruiter — especially outcomes, employers,
-// dates, and links. Nothing here should be guessed at in an interview.
+// Hero, about, experience, skills, education, and certifications are filled in
+// from the CV. The `PROJECTS` array below is still scaffolding — every entry
+// marked `TODO —` needs a real project written up before this goes in front of
+// a recruiter. Nothing here should be guessed at in an interview.
 // ---------------------------------------------------------------------------
 
 export const PALETTE = {
@@ -26,8 +27,11 @@ export const HERO = {
   name: 'Aleksa Milic',
   role: 'Data Engineer',
   location: 'Niš, Serbia',
+  status: 'Open to talk',
   value:
-    'I build and run data platforms — dependable pipelines, modelled storage, and the dashboards teams actually make decisions from.',
+    'I build and run data platforms end to end — Spark and Azure Data Factory ' +
+    'pipelines, warehouses that stay fast at billions of rows, and the CI/CD ' +
+    'and infrastructure under them.',
   tagline: 'Raw in. Value out.',
   ctas: [
     { label: 'See selected work', to: 'work', primary: true },
@@ -36,11 +40,12 @@ export const HERO = {
 };
 
 export const ABOUT =
-  'TODO — 2–3 plain sentences: your background, the kind of problems you like ' +
-  'working on, and what you want next. No factory metaphors. Example shape: ' +
-  '“I’ve spent N years building data platforms on Azure and Databricks, mostly ' +
-  'for <industry>. I care about pipelines that fail loudly and models analysts ' +
-  'can trust. I’m looking for a <role type> role, remote or in Niš.”';
+  'I’m a data engineer with around five years building pipelines and cloud ' +
+  'data platforms across AWS, Azure, and GCP — most of it on Databricks and ' +
+  'Azure Data Factory. Enough of my time has gone into DevOps — containers, ' +
+  'CI/CD, infrastructure-as-code — that I can take a pipeline from ingestion ' +
+  'to production without handing it off. I care about pipelines that fail ' +
+  'loudly and data models analysts can trust.';
 
 // --- selected work ----------------------------------------------------
 // Keep this to your 3 strongest. Each entry: what it was, your role, the
@@ -52,18 +57,18 @@ export const ABOUT =
 // slot shows a placeholder.
 export const PROJECTS = [
   {
-    id: 'radar',
-    title: 'Niš Urban Development Radar',
-    year: '2024',
+    id: 'project-1',
+    title: 'TODO — Project one',
+    year: 'YYYY',
     context:
-      'A public dashboard tracking construction permits and urban development across the city, built from open municipal data.',
-    role: 'Sole engineer — ingestion, data model, and the published dashboard.',
-    stack: ['Python', 'Azure Data Factory', 'PostgreSQL', 'dbt', 'Power BI'],
+      'TODO — one sentence: what the system was and which business problem it solved.',
+    role: 'TODO — your specific responsibility (e.g. “Owned ingestion + the model, 2-person team”).',
+    stack: ['Databricks', 'Apache Spark', 'Delta Lake', 'Power BI'],
     outcome:
-      'TODO — the measurable result. e.g. “Merged 6 disconnected registries into one daily-refreshed model; used by <N> planners / <N> monthly visitors.”',
+      'TODO — the measurable result, with a number where you have one (cost, time saved, reliability, adoption).',
     href: '', // TODO — case study or repo link
     image: null, // TODO — import a dashboard screenshot and set it here
-    imageAlt: 'Niš Urban Development Radar dashboard',
+    imageAlt: '',
   },
   {
     id: 'project-2',
@@ -96,19 +101,34 @@ export const PROJECTS = [
 // --- experience ------------------------------------------------------
 export const EXPERIENCE = [
   {
-    role: 'TODO — Job title',
-    org: 'TODO — Company',
-    period: 'YYYY — Present',
+    role: 'Data Engineer',
+    org: 'Ingsoftware / ASML',
+    period: 'Jan 2026 — Present',
     points: [
-      'TODO — what you own day to day: systems, data volume, team size.',
-      'TODO — one shipped result you’re proud of.',
+      'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS; extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup holding 99.9% uptime.',
+      'Cut average runtime on critical Spark jobs by 40% through partition tuning, caching, and cluster right-sizing.',
+      'Own data governance across Databricks and Delta Lake — quality checks, access control, and lineage for production datasets.',
     ],
   },
   {
-    role: 'TODO — Previous title',
-    org: 'TODO — Company',
-    period: 'YYYY — YYYY',
-    points: ['TODO — scope, and a result.'],
+    role: 'Data Engineer',
+    org: 'Vega IT',
+    period: 'Jun 2024 — Jan 2026',
+    points: [
+      'Built and ran 20+ ETL/ELT pipelines on Azure Data Factory and Airflow, with reconciliation and data-quality controls that lifted accuracy by 35%.',
+      'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records; schema design improved query performance by 40%.',
+      'Shipped 25+ Power BI dashboards and ran the platform DevOps — ECS/EKS with Docker and Kubernetes, Terraform IaC, multi-cloud CI/CD.',
+    ],
+  },
+  {
+    role: 'Data Analyst',
+    org: 'Gemini Software',
+    period: 'Jul 2022 — Jun 2024',
+    points: [
+      'Automated transformation and ingestion workflows in Python (Pandas, NumPy), cutting manual processing time by 60%.',
+      'Handled cleansing and collation from internal and external sources; wrote complex SQL with advanced joins, window functions, and CTEs.',
+      'Integrated third-party APIs and contributed to AWS/Azure cloud-migration work.',
+    ],
   },
 ];
 
@@ -117,33 +137,78 @@ export const EXPERIENCE = [
 export const SKILLS = [
   {
     group: 'Ingestion & orchestration',
-    items: ['Azure Data Factory', 'Python', 'REST / CDC', 'Airflow'],
+    items: ['Azure Data Factory', 'Apache Airflow', 'AWS Glue', 'AWS DMS', 'Python'],
   },
   {
     group: 'Processing',
-    items: ['Apache Spark', 'Databricks', 'Microsoft Fabric', 'SQL'],
+    items: ['Apache Spark', 'PySpark', 'Databricks', 'Microsoft Fabric'],
   },
   {
     group: 'Storage & modelling',
-    items: ['Delta Lake', 'Medallion architecture', 'dbt', 'Unity Catalog'],
+    items: [
+      'Delta Lake',
+      'Medallion architecture',
+      'AWS Redshift',
+      'Azure Synapse',
+      'BigQuery',
+      'Advanced SQL',
+    ],
   },
   {
-    group: 'Serving & BI',
-    items: ['Power BI', 'Apache Superset', 'Semantic models'],
+    group: 'Platform, DevOps & BI',
+    items: ['Docker', 'Kubernetes', 'Terraform', 'Multi-cloud CI/CD', 'Power BI'],
   },
 ];
 
 export const SOCIALS = [
-  { label: 'GitHub', href: 'https://github.com/', icon: 'github' }, // TODO — real profile URL
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/', icon: 'linkedin' }, // TODO
-  { label: 'Email', href: 'mailto:you@example.com', icon: 'mail' }, // TODO
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/aleksa-milic', icon: 'linkedin' },
+  { label: 'Email', href: 'mailto:aleksamilic2224@gmail.com', icon: 'mail' },
+  // GitHub intentionally omitted — the CV link (github.com/AsinaMilic) 404s.
+  // Add it back here once the handle is confirmed:
+  // { label: 'GitHub', href: 'https://github.com/<handle>', icon: 'github' },
 ];
 
 export const CONTACT = {
-  email: 'you@example.com', // TODO — real address
+  email: 'aleksamilic2224@gmail.com',
   blurb:
-    'Open to data engineering roles — remote, or on-site in Niš. Email is the quickest way to reach me.',
+    'I’m at Ingsoftware these days, on ASML’s data platform. Always glad to ' +
+    'talk data platforms, Spark performance, or multi-cloud — role attached ' +
+    'or not. Email is the quickest way to reach me.',
 };
+
+// --- education & certifications --------------------------------------
+export const EDUCATION = [
+  {
+    degree: 'MSc — Data Science & Engineering',
+    org: 'Faculty of Electronic Engineering, Niš',
+    period: '2023 — 2025',
+    note: 'GPA 9.7 / 10. Thesis: optimising distributed data-pipeline architectures on cloud platforms.',
+  },
+  {
+    degree: 'BSc — Computer Science & Informatics',
+    org: 'Faculty of Electronic Engineering, Niš',
+    period: '2019 — 2023',
+    note: 'GPA 8.7 / 10. Thesis: benchmarking distributed data-processing frameworks for large-scale analytics.',
+  },
+];
+
+export const CERTIFICATIONS = [
+  {
+    name: 'Microsoft Certified: Fabric Data Engineer Associate',
+    issuer: 'Microsoft',
+    href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/2f8a1b129206564',
+  },
+  {
+    name: 'Databricks Generative AI Fundamentals',
+    issuer: 'Databricks',
+    href: 'https://credentials.databricks.com/a19fc6fc-5a93-4121-be99-81a2e97cb347#acc.k7pDhwHX',
+  },
+  {
+    name: 'Databricks Platform Fundamentals',
+    issuer: 'Databricks',
+    href: 'https://credentials.databricks.com/df903b21-ba0e-47cf-ad70-b3bfb4e866fb#acc.UPA5rqcN',
+  },
+];
 
 // Section order — drives the nav panel and the progress rail.
 export const SECTIONS = [
