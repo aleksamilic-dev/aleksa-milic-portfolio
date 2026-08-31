@@ -665,6 +665,12 @@ a {
   object-fit: cover;
 }
 
+/* diagrams (SVG) are drawn to fit the slot, not cropped like a screenshot */
+.project__figure img[src$='.svg'] {
+  object-fit: contain;
+  padding: clamp(10px, 2.4vw, 26px);
+}
+
 .project__figure-ph {
   font-family: var(--font-mono);
   font-size: 10px;

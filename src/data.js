@@ -1,3 +1,5 @@
+import harvestWarehouse from './assets/harvest-warehouse.svg';
+
 // ---------------------------------------------------------------------------
 // Single source of truth: portfolio content + the ambient scene's layout.
 //
@@ -86,15 +88,23 @@ export const PROJECTS = [
   },
   {
     id: 'project-3',
-    title: 'TODO — Project three',
-    year: 'YYYY',
-    context: 'TODO — one sentence of context.',
-    role: 'TODO — your role.',
-    stack: ['Microsoft Fabric', 'SQL', 'Power BI'],
-    outcome: 'TODO — the result.',
-    href: '',
-    image: null, // TODO — screenshot / diagram
-    imageAlt: '',
+    title: 'Harvest Yield Warehouse',
+    year: '2026',
+    context:
+      'A dimensional warehouse for a produce cooperative’s harvest deliveries — ' +
+      'an operational feed modelled into a Kimball star schema with slowly-changing ' +
+      'dimensions, a tested dbt transformation layer, and lineage docs published live.',
+    role:
+      'Solo build. The data model, the dbt project, 65 data tests, the CI, and the ' +
+      'published lineage site. A rebuild of an old Oracle + Apache NiFi coursework mart.',
+    stack: ['dbt', 'DuckDB', 'Kimball / SCD2', 'GitHub Actions', 'SQL'],
+    outcome:
+      'Rebuilds from a clean clone in one command; every CI run is gated on 65 data ' +
+      'tests (schema, referential, SCD2 integrity, business rules); the model docs and ' +
+      'interactive lineage graph deploy to GitHub Pages on each push.',
+    href: 'https://github.com/aleksamilic-dev/harvest-yield-warehouse',
+    image: harvestWarehouse,
+    imageAlt: 'Harvest Yield Warehouse — Kimball star schema fed by a dbt pipeline',
   },
 ];
 
