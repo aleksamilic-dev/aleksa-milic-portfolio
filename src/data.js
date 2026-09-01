@@ -3,10 +3,9 @@ import engineBenchmark from './assets/engine-benchmark.svg';
 // ---------------------------------------------------------------------------
 // Single source of truth: portfolio content + the ambient scene's layout.
 //
-// Hero, about, experience, skills, education, and certifications are filled in
-// from the CV. The `PROJECTS` array below is still scaffolding — every entry
-// marked `TODO —` needs a real project written up before this goes in front of
-// a recruiter. Nothing here should be guessed at in an interview.
+// Hero, about, experience, skills, education, and certifications come from the
+// CV, and all three projects are written up. Nothing here should be anything
+// you couldn't be questioned on in an interview.
 // ---------------------------------------------------------------------------
 
 export const PALETTE = {
@@ -54,8 +53,12 @@ export const ABOUT =
 //
 // `image` is the visual that sits to the right of the text — a dashboard
 // screenshot, architecture diagram, etc. Drop a file in src/assets/, import
-// it at the top of this file, and set `image` to the import. Until then the
-// slot shows a placeholder.
+// it at the top of this file, and set `image` to the import.
+//
+// `embed` replaces that slot with a live panel spanning the full row. A
+// same-origin one posts its height back (see ProjectEmbed); mark a
+// cross-origin one `external` for a fixed height, a click-to-activate shield,
+// and a hand-off link below 1100px.
 export const PROJECTS = [
   {
     id: 'project-1',

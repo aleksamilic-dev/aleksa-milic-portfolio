@@ -24,32 +24,40 @@ const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
 ).get('tier');
 
+// What the hardware can do. Fixed for the session and every input is
+// synchronous, so this can run before the first paint.
+function detectCapability() {
+  if (typeof document === 'undefined') return 'full';
+
+  let gl = null;
+  try {
+    gl = document.createElement('canvas').getContext('webgl2');
+  } catch {
+    gl = null;
+  }
+  const cores = navigator.hardwareConcurrency || 8;
+  const mem = navigator.deviceMemory || 8;
+
+  // three r0.171 is WebGL2-only, so no context (or a genuinely weak device)
+  // means the static 2D backdrop — there's no lighter 3D path to offer.
+  if (!gl || cores <= 2 || mem <= 2) return 'flat';
+  gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+  // modest laptops get the stripped scene, the rest full.
+  return cores <= 4 || mem <= 4 ? 'lite' : 'full';
+}
+
 export function useDeviceTier() {
   const small = useMediaQuery('(max-width: 720px)');
-  const [tier, setTier] = useState(TIER_OVERRIDE || 'full');
+  // Resolved in the initializer, not an effect. Deciding after mount meant the
+  // first render said 'full', which mounts <Scene> and starts fetching three +
+  // r3f (~330 kB gz) on exactly the devices about to be told they get none of
+  // it. Viewport is folded in separately since it can change under us.
+  const [capability] = useState(detectCapability);
 
-  useEffect(() => {
-    if (TIER_OVERRIDE) return; // ?tier=flat|lite|full forces a mode for testing
-
-    let gl = null;
-    try {
-      gl = document.createElement('canvas').getContext('webgl2');
-    } catch {
-      gl = null;
-    }
-    const cores = navigator.hardwareConcurrency || 8;
-    const mem = navigator.deviceMemory || 8;
-
-    // three r0.171 is WebGL2-only, so no context (or a genuinely weak device)
-    // means the static 2D backdrop — there's no lighter 3D path to offer.
-    if (!gl || cores <= 2 || mem <= 2) return setTier('flat');
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-
-    // phones + modest laptops get the stripped scene, the rest full.
-    setTier(small || cores <= 4 || mem <= 4 ? 'lite' : 'full');
-  }, [small]);
-
-  return tier;
+  if (TIER_OVERRIDE) return TIER_OVERRIDE; // ?tier=flat|lite|full, for testing
+  if (capability === 'flat') return 'flat';
+  return small || capability === 'lite' ? 'lite' : 'full';
 }
 
 // Pointer position in normalised [-1, 1] space. `tx/ty` is the live target;

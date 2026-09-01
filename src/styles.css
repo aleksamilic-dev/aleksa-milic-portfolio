@@ -14,7 +14,7 @@
 
   --ink: #eef3f7;
   --ink-mute: #a2b4c1;
-  --ink-faint: #647684;
+  --ink-faint: #6f8090;
 
   --amber: #ff9d4d;
   --amber-bright: #ffc794;
@@ -256,7 +256,15 @@ a {
   gap: 12px;
   background: none;
   border: 0;
-  padding: 0;
+  padding: 3px 0;
+}
+
+/* 24px minimum hit area on the small controls, without moving anything. Rail
+   pitch is 31px (11px dot + 20px gap), so 25px still leaves 6px between. */
+.rail__dot::after {
+  content: '';
+  position: absolute;
+  inset: var(--hit);
 }
 
 .brand__mark {
@@ -353,6 +361,8 @@ a {
   width: 11px;
   height: 11px;
   padding: 0;
+  /* hit area only — the dot itself stays 11px and nothing moves */
+  --hit: -7px;
   background: none;
   border: 0;
   display: grid;
@@ -411,6 +421,7 @@ a {
   color: var(--ink-mute);
   display: grid;
   place-items: center;
+  padding: 5px;
   transition: color 0.2s, transform 0.2s;
 }
 
@@ -546,6 +557,7 @@ a {
   position: absolute;
   left: 50%;
   bottom: 4vh;
+  padding: 5px 0;
   z-index: 1;
   transform: translateX(-50%);
   display: flex;
@@ -764,6 +776,8 @@ a {
 .project__link {
   display: inline-flex;
   align-items: center;
+  /* 10px mono set the link 13px tall; pad it to clear the 24px target minimum */
+  padding: 7px 0;
   gap: 8px;
   color: var(--amber);
   letter-spacing: 0.12em;
@@ -997,7 +1011,8 @@ a {
 .project__embed-note a {
   color: var(--ink-mute);
   border-bottom: 1px solid var(--hair);
-  padding-bottom: 1px;
+  /* top-only, so the hit area grows without pushing the underline off the text */
+  padding: 8px 0 1px;
   transition: color 0.2s, border-color 0.2s;
 }
 
@@ -1352,6 +1367,7 @@ a.cert:hover .cert__ext {
 .contact__socials a {
   display: flex;
   align-items: center;
+  padding: 5px 0;
   gap: 9px;
   color: var(--ink-mute);
   letter-spacing: 0.06em;
@@ -1399,7 +1415,7 @@ a.cert:hover .cert__ext {
 }
 
 /* ===========================================================================
-   2D CALM BACKDROP (flat tier / reduced motion / calm toggle)
+   2D CALM BACKDROP (flat tier only — see ui/Fallback.jsx)
    =========================================================================== */
 .flat {
   position: absolute;

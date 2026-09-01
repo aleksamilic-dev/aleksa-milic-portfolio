@@ -30,7 +30,15 @@ commit `docs/` whenever the site changes.
 
 ## Content
 
-All copy and the scene layout live in `src/data.js`. Hero, about, experience,
-skills, education, and certifications are filled in from the CV. The `PROJECTS`
-array is still scaffolding — entries marked `TODO —` need a real project written
-up (and a dashboard screenshot dropped in `src/assets/`).
+All copy and the scene layout live in `src/data.js`, and every section is filled
+in. Two of the three projects carry a live panel instead of a screenshot:
+`PROJECTS[0]` embeds `public/nis-urban-development-radar.html`, which is
+same-origin and posts its height back so the iframe never scrolls internally;
+`PROJECTS[2]` frames the project's own published dbt docs, deep-linked straight
+onto the lineage graph. Cross-origin embeds are marked `external` — they get a
+fixed height, a click-to-activate shield so the page can still be scrolled past
+them, and a hand-off link instead of the frame below 1100px.
+
+The CV linked from the contact section is `public/Aleksa_Milic_CV.pdf`. Vite
+copies `public/` into `docs/` verbatim, so replacing that file and rebuilding is
+all it takes to publish a new one.

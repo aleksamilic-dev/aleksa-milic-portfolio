@@ -1,7 +1,9 @@
 import { SECTIONS } from '../data.js';
 
-// 2D calm backdrop — shown when WebGL is unavailable, the device is modest,
-// the visitor prefers reduced motion, or "Calm" is toggled on. Fully static:
+// 2D calm backdrop — shown on the `flat` tier only: no WebGL2 context, or a
+// genuinely weak device (see hooks.js useDeviceTier). There is no Calm toggle,
+// and prefers-reduced-motion deliberately isn't gated, so nothing else reaches
+// this. Fully static:
 // a dim floor, haze, and a horizon line with one node per section. The node
 // for the section in view lights up. It sits well behind the content and
 // never competes with it.
