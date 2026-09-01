@@ -1333,7 +1333,10 @@ a.cert:hover .cert__ext {
 /* CV download — deliberately quieter than the email above it, but a real
    target: a recruiter who likes the site needs something to forward on. */
 .contact__cv {
-  display: inline-flex;
+  /* block-level, so it takes its own line under the email instead of riding
+     alongside it wherever the column happens to be wide enough */
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 10px;
   margin-top: 24px;
