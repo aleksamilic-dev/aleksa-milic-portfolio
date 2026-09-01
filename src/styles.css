@@ -83,6 +83,7 @@ a {
 .project__facts dt,
 .project__stack li,
 .project__link,
+.project__embed-kicker,
 .skills__group li,
 .xp__period,
 .xp__org,
@@ -665,8 +666,10 @@ a {
   object-fit: cover;
 }
 
-/* diagrams (SVG) are drawn to fit the slot, not cropped like a screenshot */
-.project__figure img[src$='.svg'] {
+/* diagrams (SVG, whether a file or an inlined data URI) are drawn to fit the
+   slot, not cropped like a screenshot */
+.project__figure img[src$='.svg'],
+.project__figure img[src^='data:image/svg'] {
   object-fit: contain;
   padding: clamp(10px, 2.4vw, 26px);
 }
@@ -753,6 +756,74 @@ a {
 
 .project__link:hover {
   gap: 11px;
+}
+
+/* Live embed — spans the full project row, below the text + figure. The iframe
+   auto-sizes to its content via postMessage (see ui/HUD.jsx ProjectEmbed). */
+.project__embed {
+  grid-column: 1 / -1;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project__embed-intro {
+  max-width: 68ch;
+}
+
+.project__embed-kicker {
+  margin: 0 0 10px;
+  color: var(--amber);
+}
+
+.project__embed-blurb {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-mute);
+}
+
+.project__embed-frame {
+  width: 100%;
+  border: 1px solid var(--panel-line);
+  border-radius: 12px;
+  background: #0c0c0e;
+  overflow: hidden;
+}
+
+.project__embed-frame iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  transition: height 0.25s var(--ease);
+}
+
+.project__embed-note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.project__embed-note a {
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--hair);
+  padding-bottom: 1px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.project__embed-note a:hover {
+  color: var(--blue-bright);
+  border-color: var(--blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project__embed-frame iframe {
+    transition: none;
+  }
 }
 
 /* ===========================================================================

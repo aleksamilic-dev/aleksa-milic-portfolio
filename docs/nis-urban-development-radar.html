@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Niš Urban Development Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* Dark-committed palette — this page replicates a specific dark BI dashboard
+     (Apache Superset), so it deliberately renders one visual world. Every color
+     is painted explicitly so the page holds on any host ground. */
+  :root {
+    --bg: #0c0c0e;
+    --panel: #17171a;
+    --panel-2: #1f1f24;
+    --border: #2b2b32;
+    --grid: #242429;
+    --ink: #ededef;
+    --ink-dim: #a2a2ab;
+    --ink-faint: #6c6c76;
+    --teal: #2893b3;
+    --teal-line: #34a9cc;
+    --teal-fill: rgba(52, 169, 204, 0.16);
+    --amber: #c77f2e;
+    --amber-line: #d98f3e;
+    --good: #4e9e6f;
+    --radius: 9px;
+    --maxw: 1200px;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(12px, 3vw, 24px);
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; }
+
+  /* ---- grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 14px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px 18px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .span-4 { grid-column: span 4; }
+  .span-6 { grid-column: span 6; }
+  .span-8 { grid-column: span 8; }
+  .span-12 { grid-column: span 12; }
+
+  .panel h2 {
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .scope { color: var(--teal-line); font-weight: 500; }
+  .tag {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--ink-faint);
+    border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px;
+    vertical-align: middle;
+  }
+  .panel .note {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+
+  /* ---- KPI ---- */
+  .kpi .value {
+    font-size: clamp(2.4rem, 1.6rem + 2.6vw, 3.1rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-top: 5px;
+  }
+  .kpi .label { color: var(--ink-dim); font-size: 13px; margin-top: 8px; }
+  .kpi .meta { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-top: 3px; }
+  .kpi .kpi-delta { font-size: 12px; color: var(--ink-dim); margin-top: 12px; display: flex; align-items: center; gap: 6px; }
+  .kpi .kpi-delta b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpi .kpi-delta .up { color: var(--good); }
+  .kpi .spark-cap { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: auto 0 6px; }
+  .kpi .spark-wrap { position: relative; width: 100%; }
+  .kpi svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  /* ---- charts ---- */
+  .chart { position: relative; width: 100%; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis text { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--border); stroke-width: 1; }
+  .series-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .series-line.thin { stroke-width: 1.35; }
+  .dot-end { stroke: var(--panel); stroke-width: 2; }
+
+  .legend { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .legend button {
+    display: flex; align-items: center; gap: 7px;
+    font: inherit; font-size: 11.5px; color: var(--ink-dim);
+    background: transparent; border: 1px solid transparent; border-radius: 6px;
+    padding: 3px 8px; cursor: pointer; transition: background .12s, opacity .12s;
+  }
+  .legend button:hover { background: var(--panel-2); }
+  .legend button i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+  .legend button.off { opacity: 0.4; }
+  .legend button.off i { background: var(--ink-faint) !important; }
+
+  .series-line, .series-fill, .series-dot-end, .end-label { transition: opacity .15s; }
+  .is-hidden { display: none; }
+  .is-dim { opacity: 0.22; }
+  .end-label { font-family: var(--mono); font-size: 10.5px; font-weight: 500; }
+
+  /* tooltip + crosshair */
+  .crosshair { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+  .hover-dot { stroke: var(--panel); stroke-width: 2; opacity: 0; }
+  .tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 11.5px;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, 6px);
+    transition: opacity .1s;
+    z-index: 5;
+    box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  }
+  .tip.flip-left { transform: translate(calc(-100% - 10px), 6px); }
+  .tip.flip-right { transform: translate(10px, 6px); }
+  .tip .t-row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .tip .t-row i { width: 8px; height: 8px; border-radius: 2px; }
+  .tip .t-head { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* ---- table ---- */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    text-align: right;
+    padding: 0 12px 9px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child { text-align: left; }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--grid);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+  }
+  tbody td:first-child { text-align: left; color: var(--ink); white-space: nowrap; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: var(--panel-2); }
+  tbody tr.active td { background: rgba(40,147,179,0.13); }
+  tbody tr.active td:first-child { box-shadow: inset 3px 0 0 var(--teal-line); color: var(--teal-line); }
+  tbody tr:last-child td { border-bottom: none; }
+  .bar { position: absolute; left: 0; top: 4px; bottom: 4px; background: rgba(78,158,111,0.20); border-radius: 2px; z-index: 0; transition: width .35s cubic-bezier(.2,.7,.3,1); }
+  .cellval { position: relative; z-index: 1; }
+  .naval { color: var(--ink-faint); }
+
+  thead th button {
+    font: inherit; color: inherit; background: transparent; border: 0; padding: 0;
+    cursor: pointer; display: inline-flex; align-items: baseline; gap: 4px;
+    text-transform: inherit; letter-spacing: inherit;
+  }
+  thead th button:hover { color: var(--ink-dim); }
+  thead th button.active { color: var(--teal-line); }
+  .sort-ind { font-size: 8px; opacity: .8; }
+
+  :focus-visible { outline: 2px solid var(--teal-line); outline-offset: 2px; border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    .span-4, .span-6, .span-8 { grid-column: span 12; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+    <section class="panel kpi span-4">
+      <h2>Completed dwellings <span id="kpi-scope" class="scope"></span></h2>
+      <div class="value" id="kpi-value">&mdash;</div>
+      <div class="label">completed dwellings &middot; 2026 <span class="tag">projected</span></div>
+      <div class="meta" id="kpi-meta"></div>
+      <div class="kpi-delta" id="kpi-delta"></div>
+      <div class="spark-cap" id="kpi-spark-cap">completed dwellings by year &nbsp;·&nbsp; <span id="kpi-spark-range"></span></div>
+      <div class="spark-wrap"><svg id="kpi-spark" viewBox="0 0 300 66" aria-hidden="true"></svg></div>
+    </section>
+
+    <section class="panel span-8">
+      <h2>Planned versus completed <span id="planned-scope" class="scope"></span></h2>
+      <div class="legend" id="planned-legend"></div>
+      <div class="chart" id="c-planned"></div>
+    </section>
+
+    <section class="panel span-12">
+      <h2>Niš municipality coverage</h2>
+      <div class="table-wrap"><table id="coverage"></table></div>
+    </section>
+  </div>
+</div>
+
+<script id="viz-data" type="application/json">{"territories":[{"code":"79022","name":"Град Ниш","annual_completed":[{"year":2011,"dwellings":849.0},{"year":2012,"dwellings":529.0},{"year":2013,"dwellings":522.0},{"year":2014,"dwellings":980.0},{"year":2015,"dwellings":616.0},{"year":2016,"dwellings":571.0},{"year":2017,"dwellings":579.0},{"year":2018,"dwellings":892.0},{"year":2019,"dwellings":1042.0},{"year":2020,"dwellings":1119.0},{"year":2021,"dwellings":986.0},{"year":2022,"dwellings":776.0},{"year":2023,"dwellings":1348.0},{"year":2024,"dwellings":1695.0},{"year":2025,"dwellings":2074.0},{"year":2026,"dwellings":2573,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":496.0,"completed":null},{"year":2008,"permitted":408.0,"completed":null},{"year":2009,"permitted":574.0,"completed":null},{"year":2010,"permitted":238.0,"completed":null},{"year":2011,"permitted":314.0,"completed":849.0},{"year":2012,"permitted":435.0,"completed":529.0},{"year":2013,"permitted":525.0,"completed":522.0},{"year":2014,"permitted":450.0,"completed":980.0},{"year":2015,"permitted":588.0,"completed":616.0},{"year":2016,"permitted":667.0,"completed":571.0},{"year":2017,"permitted":751.0,"completed":579.0},{"year":2018,"permitted":1188.0,"completed":892.0},{"year":2019,"permitted":1163.0,"completed":1042.0},{"year":2020,"permitted":652.0,"completed":1119.0},{"year":2021,"permitted":1015.0,"completed":986.0},{"year":2022,"permitted":2533.0,"completed":776.0},{"year":2023,"permitted":1677.0,"completed":1348.0},{"year":2024,"permitted":1659.0,"completed":1695.0},{"year":2025,"permitted":1943.0,"completed":2074.0},{"year":2026,"permitted":661.0,"completed":2573,"completed_projected":true}],"latest":{"year":2026,"completed":2573,"completed_projected":true,"prev_year":2025,"prev_completed":2074.0,"permitted":122.0,"issued":68.0,"permit_period":"2026-05-01"}},{"code":"71331","name":"Медијана","annual_completed":[{"year":2011,"dwellings":366.0},{"year":2012,"dwellings":217.0},{"year":2013,"dwellings":98.0},{"year":2014,"dwellings":698.0},{"year":2015,"dwellings":350.0},{"year":2016,"dwellings":205.0},{"year":2017,"dwellings":371.0},{"year":2018,"dwellings":535.0},{"year":2019,"dwellings":477.0},{"year":2020,"dwellings":411.0},{"year":2021,"dwellings":368.0},{"year":2022,"dwellings":157.0},{"year":2023,"dwellings":445.0},{"year":2024,"dwellings":677.0},{"year":2025,"dwellings":1030.0},{"year":2026,"dwellings":1288,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":168.0,"completed":null},{"year":2008,"permitted":200.0,"completed":null},{"year":2009,"permitted":163.0,"completed":null},{"year":2010,"permitted":121.0,"completed":null},{"year":2011,"permitted":146.0,"completed":366.0},{"year":2012,"permitted":58.0,"completed":217.0},{"year":2013,"permitted":302.0,"completed":98.0},{"year":2014,"permitted":280.0,"completed":698.0},{"year":2015,"permitted":334.0,"completed":350.0},{"year":2016,"permitted":275.0,"completed":205.0},{"year":2017,"permitted":165.0,"completed":371.0},{"year":2018,"permitted":432.0,"completed":535.0},{"year":2019,"permitted":408.0,"completed":477.0},{"year":2020,"permitted":279.0,"completed":411.0},{"year":2021,"permitted":469.0,"completed":368.0},{"year":2022,"permitted":1155.0,"completed":157.0},{"year":2023,"permitted":522.0,"completed":445.0},{"year":2024,"permitted":382.0,"completed":677.0},{"year":2025,"permitted":429.0,"completed":1030.0},{"year":2026,"permitted":192.0,"completed":1288,"completed_projected":true}],"latest":{"year":2026,"completed":1288,"completed_projected":true,"prev_year":2025,"prev_completed":1030.0,"permitted":78.0,"issued":19.0,"permit_period":"2026-05-01"}},{"code":"71307","name":"Пантелеј","annual_completed":[{"year":2011,"dwellings":233.0},{"year":2012,"dwellings":42.0},{"year":2013,"dwellings":157.0},{"year":2014,"dwellings":226.0},{"year":2015,"dwellings":152.0},{"year":2016,"dwellings":281.0},{"year":2017,"dwellings":102.0},{"year":2018,"dwellings":245.0},{"year":2019,"dwellings":295.0},{"year":2020,"dwellings":327.0},{"year":2021,"dwellings":369.0},{"year":2022,"dwellings":340.0},{"year":2023,"dwellings":437.0},{"year":2024,"dwellings":677.0},{"year":2025,"dwellings":684.0},{"year":2026,"dwellings":855,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":155.0,"completed":null},{"year":2008,"permitted":106.0,"completed":null},{"year":2009,"permitted":245.0,"completed":null},{"year":2010,"permitted":85.0,"completed":null},{"year":2011,"permitted":129.0,"completed":233.0},{"year":2012,"permitted":84.0,"completed":42.0},{"year":2013,"permitted":172.0,"completed":157.0},{"year":2014,"permitted":120.0,"completed":226.0},{"year":2015,"permitted":184.0,"completed":152.0},{"year":2016,"permitted":286.0,"completed":281.0},{"year":2017,"permitted":136.0,"completed":102.0},{"year":2018,"permitted":371.0,"completed":245.0},{"year":2019,"permitted":176.0,"completed":295.0},{"year":2020,"permitted":275.0,"completed":327.0},{"year":2021,"permitted":477.0,"completed":369.0},{"year":2022,"permitted":876.0,"completed":340.0},{"year":2023,"permitted":564.0,"completed":437.0},{"year":2024,"permitted":698.0,"completed":677.0},{"year":2025,"permitted":914.0,"completed":684.0},{"year":2026,"permitted":385.0,"completed":855,"completed_projected":true}],"latest":{"year":2026,"completed":855,"completed_projected":true,"prev_year":2025,"prev_completed":684.0,"permitted":35.0,"issued":20.0,"permit_period":"2026-05-01"}},{"code":"71323","name":"Палилула (Ниш)","annual_completed":[{"year":2011,"dwellings":220.0},{"year":2012,"dwellings":67.0},{"year":2013,"dwellings":263.0},{"year":2014,"dwellings":43.0},{"year":2015,"dwellings":94.0},{"year":2016,"dwellings":72.0},{"year":2017,"dwellings":91.0},{"year":2018,"dwellings":101.0},{"year":2019,"dwellings":221.0},{"year":2020,"dwellings":301.0},{"year":2021,"dwellings":233.0},{"year":2022,"dwellings":237.0},{"year":2023,"dwellings":272.0},{"year":2024,"dwellings":293.0},{"year":2025,"dwellings":268.0},{"year":2026,"dwellings":267,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":68.0,"completed":null},{"year":2008,"permitted":57.0,"completed":null},{"year":2009,"permitted":145.0,"completed":null},{"year":2010,"permitted":26.0,"completed":null},{"year":2011,"permitted":30.0,"completed":220.0},{"year":2012,"permitted":287.0,"completed":67.0},{"year":2013,"permitted":33.0,"completed":263.0},{"year":2014,"permitted":32.0,"completed":43.0},{"year":2015,"permitted":41.0,"completed":94.0},{"year":2016,"permitted":104.0,"completed":72.0},{"year":2017,"permitted":362.0,"completed":91.0},{"year":2018,"permitted":159.0,"completed":101.0},{"year":2019,"permitted":567.0,"completed":221.0},{"year":2020,"permitted":88.0,"completed":301.0},{"year":2021,"permitted":46.0,"completed":233.0},{"year":2022,"permitted":451.0,"completed":237.0},{"year":2023,"permitted":565.0,"completed":272.0},{"year":2024,"permitted":544.0,"completed":293.0},{"year":2025,"permitted":494.0,"completed":268.0},{"year":2026,"permitted":71.0,"completed":267,"completed_projected":true}],"latest":{"year":2026,"completed":267,"completed_projected":true,"prev_year":2025,"prev_completed":268.0,"permitted":4.0,"issued":15.0,"permit_period":"2026-05-01"}},{"code":"71315","name":"Црвени крст","annual_completed":[{"year":2011,"dwellings":24.0},{"year":2012,"dwellings":201.0},{"year":2013,"dwellings":3.0},{"year":2014,"dwellings":10.0},{"year":2015,"dwellings":13.0},{"year":2016,"dwellings":8.0},{"year":2017,"dwellings":15.0},{"year":2018,"dwellings":10.0},{"year":2019,"dwellings":46.0},{"year":2020,"dwellings":77.0},{"year":2021,"dwellings":11.0},{"year":2022,"dwellings":41.0},{"year":2023,"dwellings":192.0},{"year":2024,"dwellings":41.0},{"year":2025,"dwellings":85.0},{"year":2026,"dwellings":97,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":100.0,"completed":null},{"year":2008,"permitted":40.0,"completed":null},{"year":2009,"permitted":15.0,"completed":null},{"year":2010,"permitted":1.0,"completed":null},{"year":2011,"permitted":5.0,"completed":24.0},{"year":2012,"permitted":5.0,"completed":201.0},{"year":2013,"permitted":14.0,"completed":3.0},{"year":2014,"permitted":13.0,"completed":10.0},{"year":2015,"permitted":22.0,"completed":13.0},{"year":2016,"permitted":0.0,"completed":8.0},{"year":2017,"permitted":88.0,"completed":15.0},{"year":2018,"permitted":226.0,"completed":10.0},{"year":2019,"permitted":6.0,"completed":46.0},{"year":2020,"permitted":6.0,"completed":77.0},{"year":2021,"permitted":19.0,"completed":11.0},{"year":2022,"permitted":48.0,"completed":41.0},{"year":2023,"permitted":20.0,"completed":192.0},{"year":2024,"permitted":29.0,"completed":41.0},{"year":2025,"permitted":98.0,"completed":85.0},{"year":2026,"permitted":10.0,"completed":97,"completed_projected":true}],"latest":{"year":2026,"completed":97,"completed_projected":true,"prev_year":2025,"prev_completed":85.0,"permitted":5.0,"issued":12.0,"permit_period":"2026-05-01"}},{"code":"71285","name":"Нишка Бања","annual_completed":[{"year":2011,"dwellings":6.0},{"year":2012,"dwellings":2.0},{"year":2013,"dwellings":1.0},{"year":2014,"dwellings":3.0},{"year":2015,"dwellings":7.0},{"year":2016,"dwellings":5.0},{"year":2017,"dwellings":0.0},{"year":2018,"dwellings":1.0},{"year":2019,"dwellings":3.0},{"year":2020,"dwellings":3.0},{"year":2021,"dwellings":5.0},{"year":2022,"dwellings":1.0},{"year":2023,"dwellings":2.0},{"year":2024,"dwellings":7.0},{"year":2025,"dwellings":7.0},{"year":2026,"dwellings":9,"projected":true}],"planned_vs_completed":[{"year":2007,"permitted":5.0,"completed":null},{"year":2008,"permitted":5.0,"completed":null},{"year":2009,"permitted":6.0,"completed":null},{"year":2010,"permitted":5.0,"completed":null},{"year":2011,"permitted":4.0,"completed":6.0},{"year":2012,"permitted":1.0,"completed":2.0},{"year":2013,"permitted":4.0,"completed":1.0},{"year":2014,"permitted":5.0,"completed":3.0},{"year":2015,"permitted":7.0,"completed":7.0},{"year":2016,"permitted":2.0,"completed":5.0},{"year":2017,"permitted":0.0,"completed":0.0},{"year":2018,"permitted":0.0,"completed":1.0},{"year":2019,"permitted":6.0,"completed":3.0},{"year":2020,"permitted":4.0,"completed":3.0},{"year":2021,"permitted":4.0,"completed":5.0},{"year":2022,"permitted":3.0,"completed":1.0},{"year":2023,"permitted":6.0,"completed":2.0},{"year":2024,"permitted":6.0,"completed":7.0},{"year":2025,"permitted":8.0,"completed":7.0},{"year":2026,"permitted":3.0,"completed":9,"completed_projected":true}],"latest":{"year":2026,"completed":9,"completed_projected":true,"prev_year":2025,"prev_completed":7.0,"permitted":null,"issued":2.0,"permit_period":"2026-05-01"}}],"coverage":[{"code":"79022","territory":"Град Ниш","completed_year":2026,"completed_dwellings":2573,"completed_projected":true,"permitted_dwellings":122.0,"issued_permits":68.0,"permit_period":"2026-05-01"},{"code":"71331","territory":"Медијана","completed_year":2026,"completed_dwellings":1288,"completed_projected":true,"permitted_dwellings":78.0,"issued_permits":19.0,"permit_period":"2026-05-01"},{"code":"71307","territory":"Пантелеј","completed_year":2026,"completed_dwellings":855,"completed_projected":true,"permitted_dwellings":35.0,"issued_permits":20.0,"permit_period":"2026-05-01"},{"code":"71323","territory":"Палилула (Ниш)","completed_year":2026,"completed_dwellings":267,"completed_projected":true,"permitted_dwellings":4.0,"issued_permits":15.0,"permit_period":"2026-05-01"},{"code":"71315","territory":"Црвени крст","completed_year":2026,"completed_dwellings":97,"completed_projected":true,"permitted_dwellings":5.0,"issued_permits":12.0,"permit_period":"2026-05-01"},{"code":"71285","territory":"Нишка Бања","completed_year":2026,"completed_dwellings":9,"completed_projected":true,"permitted_dwellings":null,"issued_permits":2.0,"permit_period":"2026-05-01"}],"default_code":"79022"}</script>
+<script>
+(function () {
+  "use strict";
+  try { window.trustedTypes && window.trustedTypes.createPolicy("default", { createHTML: s => s }); } catch (e) { /* allowlisted elsewhere */ }
+  const DATA = JSON.parse(document.getElementById("viz-data").textContent);
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt = new Intl.NumberFormat("en-US");
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  function el(tag, attrs, kids) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in (attrs || {})) n.setAttribute(k, attrs[k]);
+    (kids || []).forEach(c => n.appendChild(c));
+    return n;
+  }
+  // HTML element builder — no innerHTML, so it works under a strict
+  // (Trusted-Types) Content-Security-Policy, like the one artifacts enforce.
+  function h(tag, opts, ...kids) {
+    const n = document.createElement(tag);
+    opts = opts || {};
+    if (opts.class) n.className = opts.class;
+    if (opts.text != null) n.textContent = opts.text;
+    if (opts.bg) n.style.background = opts.bg;
+    for (const k in opts) {
+      if (["class", "text", "bg"].indexOf(k) === -1) n.setAttribute(k, opts[k]);
+    }
+    for (const c of kids) if (c != null) n.append(c);
+    return n;
+  }
+  function setTip(tip, head, rows) {
+    tip.textContent = "";
+    tip.appendChild(h("div", { class: "t-head", text: head }));
+    rows.forEach(r => {
+      const row = h("div", { class: "t-row" });
+      if (r.color) row.appendChild(h("i", { bg: r.color }));
+      row.append(r.text);
+      tip.appendChild(row);
+    });
+  }
+  function niceMax(v) {
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const n = v / pow;
+    const step = n <= 1 ? 1 : n <= 1.5 ? 1.5 : n <= 2 ? 2 : n <= 2.5 ? 2.5
+      : n <= 3 ? 3 : n <= 4 ? 4 : n <= 5 ? 5 : n <= 7.5 ? 7.5 : 10;
+    return step * pow;
+  }
+  function shortNum(v) {
+    if (v >= 1000) return (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k";
+    return String(v);
+  }
+
+  const REDUCED = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  const byCode = {};
+  DATA.territories.forEach(t => { byCode[t.code] = t; });
+  let currentCode = DATA.default_code;
+
+  /* ---------- KPI + interactive sparkline (re-renders on territory change) ---------- */
+  const kpiValueEl = document.getElementById("kpi-value");
+  const kpiSparkWrap = document.querySelector("#kpi-spark").parentElement;
+  let kpiAnimated = false;
+
+  function renderKPI(t) {
+    const s = t.annual_completed;               // includes projected 2026
+    const target = Math.round(s[s.length - 1].dwellings);
+    const prev = s[s.length - 2];
+
+    document.getElementById("kpi-scope").textContent = "· " + t.name;
+    document.getElementById("kpi-spark-range").textContent = s[0].year + "–" + s[s.length - 1].year;
+    document.getElementById("kpi-meta").textContent =
+      "projected from " + prev.year + " (" + fmt.format(Math.round(prev.dwellings)) + " actual)";
+
+    const box = document.getElementById("kpi-delta");
+    box.textContent = "";
+    if (prev && prev.dwellings) {
+      const pct = (target - prev.dwellings) / prev.dwellings;
+      const up = pct >= 0;
+      box.append(
+        h("span", { class: up ? "up" : "" }, (up ? "▲ " : "▼ "),
+          h("b", { text: Math.abs(pct * 100).toFixed(0) + "%" })),
+        ` vs ${prev.year}`);
+    }
+
+    if (!kpiAnimated && !REDUCED) {
+      kpiAnimated = true;
+      const t0 = performance.now(), dur = 850;
+      (function tick(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        kpiValueEl.textContent = fmt.format(Math.round(target * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+    } else {
+      kpiValueEl.textContent = fmt.format(target);
+    }
+
+    // sparkline
+    const W = 300, HH = 66, max = Math.max(...s.map(d => d.dwellings));
+    const X = i => (i / (s.length - 1)) * W;
+    const Y = v => HH - 3 - (v / max) * (HH - 12);
+    const projIdx = s.findIndex(d => d.projected);      // first projected point
+    const svg = document.getElementById("kpi-spark");
+    svg.textContent = "";
+    kpiSparkWrap.querySelectorAll(".tip").forEach(n => n.remove());
+
+    const solidPts = projIdx > 0 ? s.slice(0, projIdx) : s;
+    const dSolid = solidPts.map((d, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(d.dwellings).toFixed(1)).join(" ");
+    svg.appendChild(el("path", { d: dSolid + ` L ${X(solidPts.length - 1).toFixed(1)} ${HH} L 0 ${HH} Z`, fill: "var(--teal-fill)" }));
+    svg.appendChild(el("path", { d: dSolid, fill: "none", stroke: "var(--teal-line)", "stroke-width": "1.75",
+      "stroke-linejoin": "round", "vector-effect": "non-scaling-stroke" }));
+    if (projIdx > 0) {
+      const a = s[projIdx - 1], b = s[projIdx];
+      svg.appendChild(el("path", {
+        d: `M ${X(projIdx - 1).toFixed(1)} ${Y(a.dwellings).toFixed(1)} L ${X(projIdx).toFixed(1)} ${Y(b.dwellings).toFixed(1)}`,
+        fill: "none", stroke: "var(--teal-line)", "stroke-width": "1.75", "stroke-dasharray": "2.5 2.5",
+        "vector-effect": "non-scaling-stroke" }));
+    }
+    const chair = el("line", { class: "crosshair", y1: 0, y2: HH });
+    const dot = el("circle", { class: "hover-dot", r: "3.4", fill: "var(--teal-line)", "vector-effect": "non-scaling-stroke" });
+    const lastV = s[s.length - 1].dwellings;
+    const rest = el("circle", { cx: (W - 1.5), cy: Y(lastV), r: "3",
+      fill: s[s.length - 1].projected ? "var(--panel)" : "var(--teal-line)",
+      stroke: "var(--teal-line)", "stroke-width": "1.5", "vector-effect": "non-scaling-stroke" });
+    svg.append(chair, dot, rest);
+    const over = el("rect", { x: 0, y: 0, width: W, height: HH, fill: "transparent", style: "cursor:crosshair" });
+    svg.appendChild(over);
+
+    const tip = document.createElement("div");
+    tip.className = "tip";
+    kpiSparkWrap.appendChild(tip);
+    over.addEventListener("pointermove", ev => {
+      const r = svg.getBoundingClientRect();
+      const i = Math.max(0, Math.min(s.length - 1, Math.round((ev.clientX - r.left) / r.width * (s.length - 1))));
+      const cx = X(i);
+      chair.setAttribute("x1", cx); chair.setAttribute("x2", cx); chair.style.opacity = 1;
+      dot.setAttribute("cx", cx); dot.setAttribute("cy", Y(s[i].dwellings)); dot.style.opacity = 1;
+      rest.style.opacity = 0;
+      setTip(tip, s[i].year + (s[i].projected ? " (proj.)" : ""),
+        [{ text: fmt.format(Math.round(s[i].dwellings)) + " completed" }]);
+      const frac = cx / W;
+      tip.className = "tip" + (frac > 0.7 ? " flip-left" : frac < 0.3 ? " flip-right" : "");
+      tip.style.left = frac * 100 + "%";
+      tip.style.top = "0";
+      tip.style.opacity = 1;
+    });
+    over.addEventListener("pointerleave", () => {
+      chair.style.opacity = 0; dot.style.opacity = 0; rest.style.opacity = 1; tip.style.opacity = 0;
+    });
+  }
+
+  /* ---------- generic line chart ---------- */
+  function lineChart(mountId, opts) {
+    const mount = document.getElementById(mountId);
+    const W = 640, H = opts.height || 240;
+    const m = { t: 12, r: opts.endLabels ? 46 : 14, b: 24, l: 40 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+
+    const xs = opts.xValues;
+    const xmin = xs[0], xmax = xs[xs.length - 1];
+    const xScale = v => m.l + ((v - xmin) / (xmax - xmin || 1)) * iw;
+    const ymax = niceMax(opts.yMax);
+    const yScale = v => m.t + ih - (v / ymax) * ih;
+
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.aria || "" });
+
+    const ticks = 5;
+    const gaxis = el("g", { class: "axis" });
+    for (let i = 0; i <= ticks; i++) {
+      const val = (ymax / ticks) * i, yy = yScale(val);
+      gaxis.appendChild(el("line", { class: i === 0 ? "baseline" : "gridline", x1: m.l, x2: W - m.r, y1: yy, y2: yy }));
+      const tx = el("text", { x: m.l - 7, y: yy + 3, "text-anchor": "end" });
+      tx.textContent = shortNum(Math.round(val));
+      gaxis.appendChild(tx);
+    }
+    (opts.xTicks || xs).forEach(t => {
+      const tx = el("text", { x: xScale(t), y: H - 8, "text-anchor": "middle" });
+      tx.textContent = opts.xLabel ? opts.xLabel(t) : t;
+      gaxis.appendChild(tx);
+    });
+    svg.appendChild(gaxis);
+
+    const hidden = new Set();
+    const groups = {};  // key -> [elements]
+
+    opts.series.forEach((s, si) => {
+      const key = s.key || ("s" + si);
+      const g = groups[key] = [];
+      const pts = s.points.filter(p => p.v != null);
+      if (!pts.length) return;
+      const dline = pts.map((p, i) => (i ? "L" : "M") + xScale(p.x).toFixed(1) + " " + yScale(p.v).toFixed(1)).join(" ");
+      if (s.fill) {
+        const f = el("path", { class: "series-fill", d: dline +
+          ` L ${xScale(pts[pts.length - 1].x).toFixed(1)} ${yScale(0)} L ${xScale(pts[0].x).toFixed(1)} ${yScale(0)} Z`,
+          fill: "var(--teal-fill)" });
+        svg.appendChild(f); g.push(f);
+      }
+      const toPath = arr => arr.map((p, i) => (i ? "L" : "M") + xScale(p.x).toFixed(1) + " " + yScale(p.v).toFixed(1)).join(" ");
+      if (s.dashFrom != null) {
+        const solid = pts.filter(p => p.x <= s.dashFrom);
+        const dash = pts.filter(p => p.x >= s.dashFrom);
+        if (solid.length > 1) { const l = el("path", { class: "series-line" + (s.thin ? " thin" : ""), d: toPath(solid), stroke: s.color }); svg.appendChild(l); g.push(l); }
+        if (dash.length > 1) { const l = el("path", { class: "series-line" + (s.thin ? " thin" : ""), d: toPath(dash), stroke: s.color, "stroke-dasharray": "4 3" }); svg.appendChild(l); g.push(l); }
+      } else {
+        const ln = el("path", { class: "series-line" + (s.thin ? " thin" : ""), d: dline, stroke: s.color });
+        svg.appendChild(ln); g.push(ln);
+      }
+      const last = pts[pts.length - 1];
+      if (s.endDot || opts.endLabels) {
+        const c = el("circle", { class: "series-dot-end", cx: xScale(last.x), cy: yScale(last.v), r: "3.2",
+          fill: s.color, stroke: "var(--panel)", "stroke-width": "1.5" });
+        svg.appendChild(c); g.push(c);
+      }
+      if (opts.endLabels) {
+        const lb = el("text", { class: "end-label", x: xScale(last.x) + 7, y: yScale(last.v) + 3.5, fill: s.color });
+        lb.textContent = fmt.format(Math.round(last.v));
+        svg.appendChild(lb); g.push(lb);
+      }
+    });
+
+    const crosshair = el("line", { class: "crosshair", y1: m.t, y2: m.t + ih });
+    svg.appendChild(crosshair);
+    const hoverDots = opts.series.map(s => {
+      const c = el("circle", { class: "hover-dot", r: "3.6", fill: s.color });
+      svg.appendChild(c); return c;
+    });
+    const tip = document.createElement("div");
+    tip.className = "tip";
+    mount.appendChild(tip);
+
+    const overlay = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent", style: "cursor:crosshair" });
+    svg.appendChild(overlay);
+
+    function move(ev) {
+      const rect = svg.getBoundingClientRect();
+      const px = (ev.clientX - rect.left) / rect.width * W;
+      const val = xmin + ((px - m.l) / iw) * (xmax - xmin);
+      let nx = xs[0], best = Infinity;
+      xs.forEach(x => { const dd = Math.abs(x - val); if (dd < best) { best = dd; nx = x; } });
+      const cx = xScale(nx);
+      crosshair.setAttribute("x1", cx); crosshair.setAttribute("x2", cx);
+      crosshair.style.opacity = 1;
+      const rows = [];
+      opts.series.forEach((s, i) => {
+        const key = s.key || ("s" + i);
+        const p = s.points.find(pp => pp.x === nx);
+        if (p && p.v != null && !hidden.has(key)) {
+          hoverDots[i].setAttribute("cx", cx);
+          hoverDots[i].setAttribute("cy", yScale(p.v));
+          hoverDots[i].style.opacity = 1;
+          rows.push({ color: s.color, text: (s.name ? s.name + " " : "") + fmt.format(Math.round(p.v)) });
+        } else {
+          hoverDots[i].style.opacity = 0;
+        }
+      });
+      if (!rows.length) { tip.style.opacity = 0; return; }
+      setTip(tip, opts.tipHead ? opts.tipHead(nx) : nx, rows);
+      const frac = cx / W;
+      tip.className = "tip" + (frac > 0.72 ? " flip-left" : frac < 0.28 ? " flip-right" : "");
+      tip.style.left = (frac * 100) + "%";
+      tip.style.top = (m.t / H * 100) + "%";
+      tip.style.opacity = 1;
+    }
+    function leave() {
+      crosshair.style.opacity = 0;
+      hoverDots.forEach(d => d.style.opacity = 0);
+      tip.style.opacity = 0;
+    }
+    overlay.addEventListener("pointermove", move);
+    overlay.addEventListener("pointerleave", leave);
+    mount.appendChild(svg);
+
+    return {
+      setHidden(key, isHidden) {
+        isHidden ? hidden.add(key) : hidden.delete(key);
+        (groups[key] || []).forEach(e => e.classList.toggle("is-hidden", isHidden));
+      },
+      setEmph(key) {
+        Object.keys(groups).forEach(k => {
+          const dim = key != null && k !== key;
+          groups[k].forEach(e => e.classList.toggle("is-dim", dim));
+        });
+      }
+    };
+  }
+
+  /* ---------- planned vs completed (re-renders on territory change) ---------- */
+  function renderPlanned(t) {
+    document.getElementById("planned-scope").textContent = "· " + t.name;
+    const s = t.planned_vs_completed;
+    const mount = document.getElementById("c-planned");
+    const legend = document.getElementById("planned-legend");
+    mount.textContent = "";
+    legend.textContent = "";
+
+    const series = [
+      { key: "permitted", color: "var(--amber-line)", name: "Permitted", points: s.map(d => ({ x: d.year, v: d.permitted })) },
+      { key: "completed", color: "var(--teal-line)", name: "Completed", dashFrom: 2025,
+        points: s.map(d => ({ x: d.year, v: d.completed })) }
+    ];
+    const chart = lineChart("c-planned", {
+      xValues: s.map(d => d.year),
+      xTicks: [2007, 2011, 2015, 2019, 2023, 2026],
+      yMax: Math.max(...s.flatMap(d => [d.permitted || 0, d.completed || 0])),
+      aria: "Permitted versus completed dwellings by year",
+      height: 196, series, endLabels: true,
+      tipHead: y => y + (y === 2026 ? " (proj.)" : "")
+    });
+
+    series.forEach(sr => {
+      const b = h("button", { type: "button", "aria-pressed": "true" }, h("i", { bg: sr.color }), sr.name);
+      let on = true;
+      b.addEventListener("click", () => {
+        on = !on;
+        b.classList.toggle("off", !on);
+        b.setAttribute("aria-pressed", String(on));
+        chart.setHidden(sr.key, !on);
+      });
+      b.addEventListener("pointerenter", () => on && chart.setEmph(sr.key));
+      b.addEventListener("pointerleave", () => chart.setEmph(null));
+      legend.appendChild(b);
+    });
+  }
+
+  /* ---------- coverage table — sortable + cross-filter ---------- */
+  const renderTable = (function () {
+    const rows = DATA.coverage;
+    const cols = [
+      { key: "territory", head: "Territory", num: false },
+      { key: "completed_dwellings", head: "Completed 2026", num: true },
+      { key: "permitted_dwellings", head: "Permitted", num: true },
+      { key: "issued_permits", head: "Issued permits", num: true }
+    ];
+    const maxes = {};
+    cols.filter(c => c.num).forEach(c => maxes[c.key] = Math.max(...rows.map(r => r[c.key] || 0)));
+    const t = document.getElementById("coverage");
+    let sortKey = "completed_dwellings", sortDir = -1;
+
+    const thead = document.createElement("thead");
+    const htr = document.createElement("tr");
+    cols.forEach(c => {
+      const th = document.createElement("th");
+      const ind = h("span", { class: "sort-ind" });
+      const btn = h("button", { type: "button" }, c.head, " ", ind);
+      c._ind = ind;
+      btn.addEventListener("click", () => {
+        if (sortKey === c.key) sortDir *= -1;
+        else { sortKey = c.key; sortDir = c.num ? -1 : 1; }
+        render();
+      });
+      th.appendChild(btn);
+      c._btn = btn;
+      htr.appendChild(th);
+    });
+    const thPeriod = document.createElement("th");
+    thPeriod.textContent = "Latest period";
+    htr.appendChild(thPeriod);
+    thead.appendChild(htr);
+    t.appendChild(thead);
+    const tb = document.createElement("tbody");
+    t.appendChild(tb);
+
+    function render() {
+      const sorted = rows.slice().sort((a, b) => {
+        const av = a[sortKey], bv = b[sortKey];
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        return (typeof av === "string" ? av.localeCompare(bv) : av - bv) * sortDir;
+      });
+      cols.forEach(c => {
+        c._btn.classList.toggle("active", c.key === sortKey);
+        c._ind.textContent = c.key === sortKey ? (sortDir < 0 ? "▼" : "▲") : "";
+      });
+      tb.textContent = "";
+      sorted.forEach(r => {
+        const tr = h("tr");
+        tr.dataset.code = r.code;
+        tr.classList.toggle("active", r.code === currentCode);
+        const nameTd = h("td", { text: r.territory });
+        if (r.completed_projected) nameTd.append(" ", h("span", { class: "tag", text: "proj." }));
+        tr.appendChild(nameTd);
+        cols.filter(c => c.num).forEach(c => {
+          const v = r[c.key];
+          if (v == null) {
+            tr.appendChild(h("td", null, h("span", { class: "cellval naval", text: "N/A" })));
+            return;
+          }
+          const bar = h("span", { class: "bar" });
+          bar.style.width = (v / maxes[c.key] * 100).toFixed(1) + "%";
+          tr.appendChild(h("td", null, bar, h("span", { class: "cellval", text: fmt.format(Math.round(v)) })));
+        });
+        const d = new Date(r.permit_period);
+        tr.appendChild(h("td", null, h("span", { class: "cellval", text: MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear() })));
+        tr.addEventListener("click", () => setTerritory(r.code));
+        tb.appendChild(tr);
+      });
+    }
+    return render;
+  })();
+
+  /* ---------- orchestration ---------- */
+  function setTerritory(code) {
+    if (!byCode[code]) return;
+    currentCode = code;
+    renderKPI(byCode[code]);
+    renderPlanned(byCode[code]);
+    renderTable();
+  }
+  setTerritory(currentCode);
+
+  /* ---------- report height to a hosting page (optional, harmless standalone) --
+     Portfolio listens with:
+       addEventListener("message", e => {
+         if (e.data && e.data.source === "nis-radar") iframe.style.height = e.data.height + "px";
+       });
+  */
+  function postHeight() {
+    try {
+      const wrap = document.querySelector(".wrap");
+      const px = Math.ceil(wrap.getBoundingClientRect().bottom + parseFloat(getComputedStyle(document.body).paddingBottom));
+      parent.postMessage({ source: "nis-radar", height: px }, "*");
+    } catch (e) { /* cross-origin parent without a listener — ignore */ }
+  }
+  postHeight();
+  addEventListener("load", postHeight);
+  if (window.ResizeObserver) new ResizeObserver(postHeight).observe(document.body);
+  addEventListener("resize", postHeight);
+})();
+</script>
+</body>
+</html>

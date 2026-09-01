@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFactory } from '../store.js';
 import {
   ABOUT,
@@ -158,6 +158,46 @@ function Hero() {
   );
 }
 
+// A project whose visual is a live embed rather than a static image. The
+// embedded page (see public/nis-urban-development-radar.html) posts its content
+// height to us so the iframe never scrolls internally.
+function ProjectEmbed({ embed }) {
+  const [height, setHeight] = useState(embed.minHeight || 780);
+
+  useEffect(() => {
+    function onMessage(e) {
+      if (!e.data || e.data.source !== 'nis-radar') return;
+      const px = Number(e.data.height);
+      if (Number.isFinite(px)) setHeight(Math.min(Math.max(px, 360), 2400));
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  return (
+    <div className="project__embed" data-reveal>
+      <div className="project__embed-intro">
+        <p className="project__embed-kicker">{embed.title}</p>
+        <p className="project__embed-blurb">{embed.blurb}</p>
+      </div>
+      <div className="project__embed-frame">
+        <iframe
+          src={embed.src}
+          title={embed.frameTitle || embed.title}
+          loading="lazy"
+          style={{ height }}
+        />
+      </div>
+      <p className="project__embed-note">
+        {embed.note}{' '}
+        <a href={embed.repo} target="_blank" rel="noreferrer">
+          {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
+        </a>
+      </p>
+    </div>
+  );
+}
+
 function Work() {
   return (
     <section id="sec-work" className="section section--work">
@@ -168,7 +208,7 @@ function Work() {
 
       <ol className="work__list">
         {PROJECTS.map((p, i) => (
-          <li key={p.id} className="project" data-reveal>
+          <li key={p.id} className={p.embed ? 'project project--embed' : 'project'} data-reveal>
             <div className="project__aside">
               <span className="project__index">{String(i + 1).padStart(2, '0')}</span>
               <span className="project__year">{p.year}</span>
@@ -197,13 +237,16 @@ function Work() {
                 </a>
               )}
             </div>
-            <figure className="project__figure">
-              {p.image ? (
+            {p.image ? (
+              <figure className="project__figure">
                 <img src={p.image} alt={p.imageAlt || `${p.title} — screenshot`} loading="lazy" />
-              ) : (
+              </figure>
+            ) : p.embed ? null : (
+              <figure className="project__figure">
                 <span className="project__figure-ph">Dashboard / screenshot</span>
-              )}
-            </figure>
+              </figure>
+            )}
+            {p.embed && <ProjectEmbed embed={p.embed} />}
           </li>
         ))}
       </ol>

@@ -1,3 +1,4 @@
+import engineBenchmark from './assets/engine-benchmark.svg';
 import harvestWarehouse from './assets/harvest-warehouse.svg';
 
 // ---------------------------------------------------------------------------
@@ -60,31 +61,61 @@ export const ABOUT =
 export const PROJECTS = [
   {
     id: 'project-1',
-    title: 'TODO — Project one',
-    year: 'YYYY',
+    title: 'Niš Urban Development Radar',
+    year: '2026',
     context:
-      'TODO — one sentence: what the system was and which business problem it solved.',
-    role: 'TODO — your specific responsibility (e.g. “Owned ingestion + the model, 2-person team”).',
-    stack: ['Databricks', 'Apache Spark', 'Delta Lake', 'Power BI'],
+      'A BI / data-engineering project on construction activity in Niš — official ' +
+      'Statistical Office of Serbia open data, normalised and validated with Python, ' +
+      'loaded into PostgreSQL, and served as an embeddable Apache Superset dashboard.',
+    role:
+      'Solo build. The ingestion and validation pipeline, the SQL schema and ' +
+      'analytical views, the Superset dashboard-as-code, and the Dockerised deploy ' +
+      '(PostgreSQL, Superset, a guest-token API, Caddy) on a single VM.',
+    stack: ['Python', 'PostgreSQL', 'Apache Superset', 'Docker', 'Caddy'],
     outcome:
-      'TODO — the measurable result, with a number where you have one (cost, time saved, reliability, adoption).',
-    href: '', // TODO — case study or repo link
-    image: null, // TODO — import a dashboard screenshot and set it here
+      'Reproducible from a clean clone — every source download is checksummed, and ' +
+      'the pipeline never fills a missing month with zero. Ships a self-contained ' +
+      'rebuild of the dashboard for embedding without a Superset host — running below.',
+    href: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
+    image: null,
     imageAlt: '',
+    embed: {
+      src: '/nis-urban-development-radar.html',
+      title: 'Live dashboard',
+      blurb:
+        'Three cross-filtered panels over the official SORS series: completed dwellings ' +
+        '(KPI + sparkline), permitted vs completed by year, and a sortable municipality ' +
+        'coverage table. Click a table row — Град Ниш or one of its five city ' +
+        'municipalities — and the KPI and chart re-render for that territory. The 2026 ' +
+        'completed figures are a labelled projection; SORS has not published 2026 annual ' +
+        'data yet, so everything else is 2025-and-earlier plus permits through May 2026.',
+      note: 'Static rebuild of the Superset dashboard — no live backend.',
+      repo: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
+      repoLabel: 'Pipeline & methodology on GitHub',
+      minHeight: 800,
+    },
   },
   {
     id: 'project-2',
-    title: 'TODO — Project two',
-    year: 'YYYY',
+    title: 'When do you actually need a cluster?',
+    year: '2026',
     context:
-      'TODO — one sentence: what the system was and which business problem it solved.',
-    role: 'TODO — your specific responsibility (e.g. “Led the migration, 2-person team”).',
-    stack: ['Databricks', 'Apache Spark', 'Delta Lake'],
+      'A reproducible TPC-H benchmark — Apache Spark (local, and a real 2-worker ' +
+      'standalone cluster) against DuckDB, Polars and DataFusion, all reading the ' +
+      'same Parquet. It measures how far a single machine gets before a ' +
+      'distributed engine is worth its overhead.',
+    role:
+      'Solo build. The engine adapters, the timing + peak-memory harness, a ' +
+      'cross-run correctness gate, the Dockerised Spark cluster, the CI, and the ' +
+      'report generator. Grew out of my MSc thesis on distributed-pipeline tuning.',
+    stack: ['Apache Spark', 'DuckDB', 'Polars', 'DataFusion', 'Docker', 'TPC-H'],
     outcome:
-      'TODO — the concrete result, with a number where you have one (cost, time saved, reliability, adoption).',
-    href: '',
-    image: null, // TODO — screenshot / diagram
-    imageAlt: '',
+      'Across SF1 and SF10 the in-process engines finish the workload ~10× faster ' +
+      'than Spark on the same box, and the gap holds as data grows — every run ' +
+      'gated on 96 row-for-row correctness checks. Full report published on each push.',
+    href: 'https://github.com/aleksamilic-dev/tpch-engine-benchmark',
+    image: engineBenchmark,
+    imageAlt: 'TPC-H total workload time, log scale: in-process engines vs Spark, SF1 to SF10',
   },
   {
     id: 'project-3',
