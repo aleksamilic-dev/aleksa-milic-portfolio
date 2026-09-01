@@ -189,7 +189,7 @@ function ProjectEmbed({ embed }) {
         />
       </div>
       <p className="project__embed-note">
-        {embed.note}{' '}
+        {embed.note ? `${embed.note} ` : null}
         <a href={embed.repo} target="_blank" rel="noreferrer">
           {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
         </a>
@@ -239,7 +239,7 @@ function Work() {
             </div>
             {p.image ? (
               <figure className="project__figure">
-                <img src={p.image} alt={p.imageAlt || `${p.title} — screenshot`} loading="lazy" />
+                <img src={p.image} alt={p.imageAlt || `${p.title} screenshot`} loading="lazy" />
               </figure>
             ) : p.embed ? null : (
               <figure className="project__figure">

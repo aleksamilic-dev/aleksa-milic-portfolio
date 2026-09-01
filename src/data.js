@@ -32,7 +32,7 @@ export const HERO = {
   location: 'Niš, Serbia',
   status: 'Open to talk',
   value:
-    'I build and run data platforms end to end — Spark and Azure Data Factory ' +
+    'I build and run data platforms end to end: Spark and Azure Data Factory ' +
     'pipelines, warehouses that stay fast at billions of rows, and the CI/CD ' +
     'and infrastructure under them.',
   tagline: 'Raw in. Value out.',
@@ -44,11 +44,10 @@ export const HERO = {
 
 export const ABOUT =
   'I’m a data engineer with around five years building pipelines and cloud ' +
-  'data platforms across AWS, Azure, and GCP — most of it on Databricks and ' +
-  'Azure Data Factory. Enough of my time has gone into DevOps — containers, ' +
-  'CI/CD, infrastructure-as-code — that I can take a pipeline from ingestion ' +
-  'to production without handing it off. I care about pipelines that fail ' +
-  'loudly and data models analysts can trust.';
+  'data platforms across AWS, Azure, and GCP, mostly on Databricks and Azure ' +
+  'Data Factory. Enough of my time has gone into DevOps (containers, CI/CD, ' +
+  'infrastructure-as-code) that I can take a pipeline from ingestion to ' +
+  'production without handing it off.';
 
 // --- selected work ----------------------------------------------------
 // Keep this to your 3 strongest. Each entry: what it was, your role, the
@@ -64,18 +63,16 @@ export const PROJECTS = [
     title: 'Niš Urban Development Radar',
     year: '2026',
     context:
-      'A BI / data-engineering project on construction activity in Niš — official ' +
-      'Statistical Office of Serbia open data, normalised and validated with Python, ' +
-      'loaded into PostgreSQL, and served as an embeddable Apache Superset dashboard.',
+      'Construction activity in Niš from official Statistical Office open data: ' +
+      'normalised and validated in Python, loaded into PostgreSQL, served as an ' +
+      'Apache Superset dashboard.',
     role:
-      'Solo build. The ingestion and validation pipeline, the SQL schema and ' +
-      'analytical views, the Superset dashboard-as-code, and the Dockerised deploy ' +
-      '(PostgreSQL, Superset, a guest-token API, Caddy) on a single VM.',
+      'Solo. Ingestion and validation, the SQL schema and views, the dashboard ' +
+      'as code, and the Dockerised deploy on one VM.',
     stack: ['Python', 'PostgreSQL', 'Apache Superset', 'Docker', 'Caddy'],
     outcome:
-      'Reproducible from a clean clone — every source download is checksummed, and ' +
-      'the pipeline never fills a missing month with zero. Ships a self-contained ' +
-      'rebuild of the dashboard for embedding without a Superset host — running below.',
+      'Reproducible from a clean clone; sources are checksummed and gaps are ' +
+      'never zero-filled. The panel below is a self-contained rebuild.',
     href: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
     image: null,
     imageAlt: '',
@@ -83,15 +80,11 @@ export const PROJECTS = [
       src: '/nis-urban-development-radar.html',
       title: 'Live dashboard',
       blurb:
-        'Three cross-filtered panels over the official SORS series: completed dwellings ' +
-        '(KPI + sparkline), permitted vs completed by year, and a sortable municipality ' +
-        'coverage table. Click a table row — Град Ниш or one of its five city ' +
-        'municipalities — and the KPI and chart re-render for that territory. The 2026 ' +
-        'completed figures are a labelled projection; SORS has not published 2026 annual ' +
-        'data yet, so everything else is 2025-and-earlier plus permits through May 2026.',
-      note: 'Static rebuild of the Superset dashboard — no live backend.',
+        'Three cross-filtered panels over the official series. Click a municipality ' +
+        'row and the KPI and chart re-render for it. The 2026 completed figures are a ' +
+        'labelled projection; everything else is real through 2025 (permits to May 2026).',
       repo: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
-      repoLabel: 'Pipeline & methodology on GitHub',
+      repoLabel: 'Pipeline and methodology on GitHub',
       minHeight: 800,
     },
   },
@@ -100,42 +93,38 @@ export const PROJECTS = [
     title: 'When do you actually need a cluster?',
     year: '2026',
     context:
-      'A reproducible TPC-H benchmark — Apache Spark (local, and a real 2-worker ' +
-      'standalone cluster) against DuckDB, Polars and DataFusion, all reading the ' +
-      'same Parquet. It measures how far a single machine gets before a ' +
-      'distributed engine is worth its overhead.',
+      'A reproducible TPC-H benchmark: Apache Spark (local, plus a real 2-worker ' +
+      'cluster) against DuckDB, Polars and DataFusion on identical Parquet. How ' +
+      'far does one machine get before a cluster earns its overhead?',
     role:
-      'Solo build. The engine adapters, the timing + peak-memory harness, a ' +
-      'cross-run correctness gate, the Dockerised Spark cluster, the CI, and the ' +
-      'report generator. Grew out of my MSc thesis on distributed-pipeline tuning.',
+      'Solo. Engine adapters, the timing and memory harness, a cross-run ' +
+      'correctness gate, the Dockerised cluster, CI, and the report generator.',
     stack: ['Apache Spark', 'DuckDB', 'Polars', 'DataFusion', 'Docker', 'TPC-H'],
     outcome:
-      'Across SF1 and SF10 the in-process engines finish the workload ~10× faster ' +
-      'than Spark on the same box, and the gap holds as data grows — every run ' +
-      'gated on 96 row-for-row correctness checks. Full report published on each push.',
+      'The in-process engines finish ~10x faster than Spark at SF1 and SF10, and ' +
+      'the gap holds as data grows. Every run gated on 96 correctness checks.',
     href: 'https://github.com/aleksamilic-dev/tpch-engine-benchmark',
     image: engineBenchmark,
-    imageAlt: 'TPC-H total workload time, log scale: in-process engines vs Spark, SF1 to SF10',
+    imageAlt: 'TPC-H workload time, log scale: in-process engines versus Spark, SF1 to SF10',
   },
   {
     id: 'project-3',
     title: 'Harvest Yield Warehouse',
     year: '2026',
     context:
-      'A dimensional warehouse for a produce cooperative’s harvest deliveries — ' +
-      'an operational feed modelled into a Kimball star schema with slowly-changing ' +
-      'dimensions, a tested dbt transformation layer, and lineage docs published live.',
+      'A dimensional warehouse for a produce cooperative’s harvest deliveries: an ' +
+      'operational feed modelled into a Kimball star schema with slowly-changing ' +
+      'dimensions and a tested dbt layer.',
     role:
-      'Solo build. The data model, the dbt project, 65 data tests, the CI, and the ' +
-      'published lineage site. A rebuild of an old Oracle + Apache NiFi coursework mart.',
+      'Solo. The data model, the dbt project, 65 data tests, CI, and the published ' +
+      'lineage site. A rebuild of an old Oracle and Apache NiFi coursework mart.',
     stack: ['dbt', 'DuckDB', 'Kimball / SCD2', 'GitHub Actions', 'SQL'],
     outcome:
       'Rebuilds from a clean clone in one command; every CI run is gated on 65 data ' +
-      'tests (schema, referential, SCD2 integrity, business rules); the model docs and ' +
-      'interactive lineage graph deploy to GitHub Pages on each push.',
+      'tests. Model docs and the lineage graph deploy to GitHub Pages on each push.',
     href: 'https://github.com/aleksamilic-dev/harvest-yield-warehouse',
     image: harvestWarehouse,
-    imageAlt: 'Harvest Yield Warehouse — Kimball star schema fed by a dbt pipeline',
+    imageAlt: 'Harvest Yield Warehouse: Kimball star schema fed by a dbt pipeline',
   },
 ];
 
@@ -144,27 +133,27 @@ export const EXPERIENCE = [
   {
     role: 'Data Engineer',
     org: 'Ingsoftware / ASML',
-    period: 'Jan 2026 — Present',
+    period: 'Jan 2026 – Present',
     points: [
       'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS; extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup holding 99.9% uptime.',
       'Cut average runtime on critical Spark jobs by 40% through partition tuning, caching, and cluster right-sizing.',
-      'Own data governance across Databricks and Delta Lake — quality checks, access control, and lineage for production datasets.',
+      'Own data governance across Databricks and Delta Lake: quality checks, access control, and lineage for production datasets.',
     ],
   },
   {
     role: 'Data Engineer',
     org: 'Vega IT',
-    period: 'Jun 2024 — Jan 2026',
+    period: 'Jun 2024 – Jan 2026',
     points: [
       'Built and ran 20+ ETL/ELT pipelines on Azure Data Factory and Airflow, with reconciliation and data-quality controls that lifted accuracy by 35%.',
       'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records; schema design improved query performance by 40%.',
-      'Shipped 25+ Power BI dashboards and ran the platform DevOps — ECS/EKS with Docker and Kubernetes, Terraform IaC, multi-cloud CI/CD.',
+      'Shipped 25+ Power BI dashboards and ran the platform DevOps: ECS/EKS with Docker and Kubernetes, Terraform IaC, multi-cloud CI/CD.',
     ],
   },
   {
     role: 'Data Analyst',
     org: 'Gemini Software',
-    period: 'Jul 2022 — Jun 2024',
+    period: 'Jul 2022 – Jun 2024',
     points: [
       'Automated transformation and ingestion workflows in Python (Pandas, NumPy), cutting manual processing time by 60%.',
       'Handled cleansing and collation from internal and external sources; wrote complex SQL with advanced joins, window functions, and CTEs.',
@@ -211,22 +200,22 @@ export const CONTACT = {
   email: 'aleksamilic2224@gmail.com',
   blurb:
     'I’m at Ingsoftware these days, on ASML’s data platform. Always glad to ' +
-    'talk data platforms, Spark performance, or multi-cloud — role attached ' +
+    'talk data platforms, Spark performance, or multi-cloud, role attached ' +
     'or not. Email is the quickest way to reach me.',
 };
 
 // --- education & certifications --------------------------------------
 export const EDUCATION = [
   {
-    degree: 'MSc — Data Science & Engineering',
+    degree: 'MSc, Data Science and Engineering',
     org: 'Faculty of Electronic Engineering, Niš',
-    period: '2023 — 2025',
+    period: '2023 – 2025',
     note: 'GPA 9.7 / 10. Thesis: optimising distributed data-pipeline architectures on cloud platforms.',
   },
   {
-    degree: 'BSc — Computer Science & Informatics',
+    degree: 'BSc, Computer Science and Informatics',
     org: 'Faculty of Electronic Engineering, Niš',
-    period: '2019 — 2023',
+    period: '2019 – 2023',
     note: 'GPA 8.7 / 10. Thesis: benchmarking distributed data-processing frameworks for large-scale analytics.',
   },
 ];
