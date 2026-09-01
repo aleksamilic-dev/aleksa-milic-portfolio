@@ -1,5 +1,4 @@
 import engineBenchmark from './assets/engine-benchmark.svg';
-import harvestWarehouse from './assets/harvest-warehouse.svg';
 
 // ---------------------------------------------------------------------------
 // Single source of truth: portfolio content + the ambient scene's layout.
@@ -78,6 +77,7 @@ export const PROJECTS = [
     imageAlt: '',
     embed: {
       src: '/nis-urban-development-radar.html',
+      source: 'nis-radar',
       title: 'Live dashboard',
       blurb:
         'Three cross-filtered panels over the official series. Click a municipality ' +
@@ -123,8 +123,47 @@ export const PROJECTS = [
       'Rebuilds from a clean clone in one command; every CI run is gated on 65 data ' +
       'tests. Model docs and the lineage graph deploy to GitHub Pages on each push.',
     href: 'https://github.com/aleksamilic-dev/harvest-yield-warehouse',
-    image: harvestWarehouse,
-    imageAlt: 'Harvest Yield Warehouse: Kimball star schema fed by a dbt pipeline',
+    image: null,
+    imageAlt: '',
+    embed: {
+      // The project's own dbt docs, deep-linked past the landing page straight
+      // onto the lineage graph (?g_v=1). Cross-origin, so there's no height
+      // handshake — `external` gives it a fixed viewport and a click-to-activate
+      // shield, without which a scroll down the page gets eaten by the graph's
+      // own zoom.
+      src: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/#!/overview?g_v=1',
+      external: true,
+      title: 'Lineage graph',
+      blurb:
+        'The generated dbt docs, opened straight onto the lineage graph. Drag the ' +
+        'nodes, zoom, or right-click one to refocus the graph on it and hide ' +
+        'everything upstream or downstream of it. Regenerated on every push.',
+      height: 'clamp(420px, 62vh, 620px)',
+      activate: 'Click to explore the graph',
+      repo: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/',
+      repoLabel: 'Open the full dbt docs',
+      // Rendered as native markup above the frame rather than inside it, so it
+      // prerenders, stays on-brand, and costs nothing to load.
+      stats: {
+        counts: [
+          { n: 11, label: 'models' },
+          { n: 5, label: 'seeds' },
+          { n: 65, label: 'tests' },
+        ],
+        tests: [
+          { name: 'not_null', n: 30, tone: 'blue' },
+          { name: 'unique', n: 13, tone: 'blue-bright' },
+          { name: 'accepted_values', n: 9, tone: 'green' },
+          { name: 'relationships', n: 8, tone: 'amber' },
+          { name: 'custom', n: 5, tone: 'ink-faint' },
+        ],
+        note:
+          'Five seeds through five staging views into a five-dimension star. ' +
+          'dim_grower and dim_field are Type 2. The buyer and crop keys reach the ' +
+          'fact through stg_deliveries rather than a ref(), so dbt’s graph ' +
+          'draws no edge for them, but relationships tests enforce all five.',
+      },
+    },
   },
 ];
 
@@ -198,6 +237,9 @@ export const SOCIALS = [
 
 export const CONTACT = {
   email: 'aleksamilic2224@gmail.com',
+  // Lives in public/, which Vite copies into docs/ verbatim — so the file the
+  // site serves and the file you edit are the same one.
+  cv: { href: '/Aleksa_Milic_CV.pdf', label: 'Download CV', type: 'PDF' },
   blurb:
     'I’m at Ingsoftware these days, on ASML’s data platform. Always glad to ' +
     'talk data platforms, Spark performance, or multi-cloud, role attached ' +

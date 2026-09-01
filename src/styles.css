@@ -74,6 +74,21 @@ a {
   color: inherit;
 }
 
+/* Everything else on the page is painted here, so leaving focus to the
+   browser default lands an unstyled ring on a near-black ground. Keyed to
+   :focus-visible so a mouse click never paints one. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+
+/* The scroll container takes focus on mount only so the keyboard has
+   something to scroll — not a focus the visitor needs to see. */
+.viewport:focus,
+.viewport:focus-visible {
+  outline: none;
+}
+
 /* shared mono micro-label */
 .hero__eyebrow,
 .hero__cue,
@@ -88,6 +103,7 @@ a {
 .xp__period,
 .xp__org,
 .contact__socials a,
+.contact__cv,
 .contact__foot,
 .btn {
   font-family: var(--font-mono);
@@ -785,11 +801,131 @@ a {
 }
 
 .project__embed-frame {
+  position: relative;
   width: 100%;
   border: 1px solid var(--panel-line);
   border-radius: 12px;
   background: #0c0c0e;
   overflow: hidden;
+}
+
+/* Sits over a cross-origin frame until clicked, so scrolling the page past an
+   embedded graph doesn't get captured by the graph's own zoom. */
+.embed__shield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: rgba(8, 11, 16, 0.42);
+  transition: background 0.2s;
+}
+
+.embed__shield span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 12px 17px;
+  border: 1px solid var(--panel-line);
+  background: rgba(9, 12, 17, 0.86);
+  transition: border-color 0.2s;
+}
+
+.embed__shield:hover {
+  background: rgba(8, 11, 16, 0.2);
+}
+
+.embed__shield:hover span {
+  border-color: var(--amber);
+}
+
+/* counts + test breakdown above an embed */
+.estat {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--panel-line);
+  background: rgba(9, 12, 17, 0.4);
+}
+
+.estat__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin: 0;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.estat__counts span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.estat__counts b {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--amber);
+}
+
+.estat__bar {
+  display: flex;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+}
+
+.estat__bar i {
+  display: block;
+  height: 100%;
+}
+
+.estat__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  margin: 11px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.estat__keys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.estat__keys em {
+  width: 7px;
+  height: 7px;
+  font-style: normal;
+}
+
+.estat__keys b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.estat__note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-mute);
+  max-width: 78ch;
 }
 
 .project__embed-frame iframe {
@@ -845,7 +981,7 @@ a {
   max-width: var(--text-col);
 }
 
-.skills__group h4 {
+.skills__group h3 {
   margin: 0 0 14px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--hair);
@@ -1127,6 +1263,34 @@ a.cert:hover .cert__ext {
 
 .contact__email:hover svg {
   transform: translate(2px, -2px);
+}
+
+/* CV download — deliberately quieter than the email above it, but a real
+   target: a recruiter who likes the site needs something to forward on. */
+.contact__cv {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 16px;
+  color: var(--ink-mute);
+  border: 1px solid var(--panel-line);
+  background: rgba(9, 12, 17, 0.4);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.contact__cv svg {
+  color: var(--amber);
+}
+
+.contact__cv:hover {
+  color: var(--ink);
+  border-color: var(--amber);
+}
+
+.contact__cv-type {
+  padding-left: 10px;
+  border-left: 1px solid var(--hair);
 }
 
 .contact__socials {

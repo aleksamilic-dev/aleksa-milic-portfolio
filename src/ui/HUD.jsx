@@ -12,7 +12,7 @@ import {
   SKILLS,
   SOCIALS,
 } from '../data.js';
-import { ArrowDown, ArrowUpRight, ExternalLink, SOCIAL_ICONS } from './icons.js';
+import { ArrowDown, ArrowUpRight, Download, ExternalLink, SOCIAL_ICONS } from './icons.js';
 import { ISSUER_MARK } from './brands.jsx';
 import portrait from '../assets/aleksa.webp';
 
@@ -158,21 +158,83 @@ function Hero() {
   );
 }
 
-// A project whose visual is a live embed rather than a static image. The
-// embedded page (see public/nis-urban-development-radar.html) posts its content
-// height to us so the iframe never scrolls internally.
+// Counts + the test breakdown for an embed, drawn in our own markup rather
+// than inside the frame — it prerenders, and a cross-origin frame couldn't
+// hand us this anyway.
+function EmbedStats({ stats }) {
+  const total = stats.tests.reduce((sum, t) => sum + t.n, 0);
+  return (
+    <div className="estat">
+      <p className="estat__counts">
+        {stats.counts.map((c) => (
+          <span key={c.label}>
+            <b>{c.n}</b> {c.label}
+          </span>
+        ))}
+      </p>
+
+      <div>
+        <span className="estat__bar">
+          {stats.tests.map((t) => (
+            <i
+              key={t.name}
+              style={{ width: (t.n / total) * 100 + '%', background: 'var(--' + t.tone + ')' }}
+            />
+          ))}
+        </span>
+        <p className="estat__keys">
+          {stats.tests.map((t) => (
+            <span key={t.name}>
+              <em style={{ background: 'var(--' + t.tone + ')' }} />
+              <b>{t.n}</b> {t.name}
+            </span>
+          ))}
+        </p>
+      </div>
+
+      {stats.note ? <p className="estat__note">{stats.note}</p> : null}
+    </div>
+  );
+}
+
+// A project whose visual is a live embed rather than a static image.
+//
+// Same-origin panels post their content height to us so the iframe never
+// scrolls internally; `embed.source` names which panel a message came from.
+// `embed.external` marks a cross-origin frame instead: fixed viewport, no
+// handshake, and a shield the visitor has to click before the frame takes
+// pointer events — without it a scroll down the page is swallowed by the
+// embedded graph's own zoom. Any later page scroll re-arms the shield.
 function ProjectEmbed({ embed }) {
   const [height, setHeight] = useState(embed.minHeight || 780);
+  const [live, setLive] = useState(false);
+  const source = embed.source;
 
   useEffect(() => {
+    if (!source) return; // cross-origin frame — nothing will talk back
     function onMessage(e) {
-      if (!e.data || e.data.source !== 'nis-radar') return;
+      // every panel of ours is served from this origin
+      if (e.origin !== window.location.origin) return;
+      if (!e.data || e.data.source !== source) return;
       const px = Number(e.data.height);
       if (Number.isFinite(px)) setHeight(Math.min(Math.max(px, 360), 2400));
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [source]);
+
+  // While the frame is live it eats the wheel, so the page can only scroll
+  // from outside it — which makes scrolling away a safe signal to shield it
+  // again. Needs a threshold, though: the visitor clicks the shield moments
+  // after scrolling to it, and the tail of that scroll would otherwise re-arm
+  // it out from under them.
+  useEffect(() => {
+    if (!live) return;
+    const from = useFactory.getState().progress;
+    return useFactory.subscribe((s) => {
+      if (Math.abs(s.progress - from) > 0.01) setLive(false);
+    });
+  }, [live]);
 
   return (
     <div className="project__embed" data-reveal>
@@ -180,13 +242,23 @@ function ProjectEmbed({ embed }) {
         <p className="project__embed-kicker">{embed.title}</p>
         <p className="project__embed-blurb">{embed.blurb}</p>
       </div>
+      {embed.stats ? <EmbedStats stats={embed.stats} /> : null}
+
       <div className="project__embed-frame">
         <iframe
           src={embed.src}
           title={embed.frameTitle || embed.title}
           loading="lazy"
-          style={{ height }}
+          style={{
+            height: embed.height || height,
+            pointerEvents: embed.external && !live ? 'none' : undefined,
+          }}
         />
+        {embed.external && !live ? (
+          <button className="embed__shield" onClick={() => setLive(true)}>
+            <span>{embed.activate || 'Click to interact'}</span>
+          </button>
+        ) : null}
       </div>
       <p className="project__embed-note">
         {embed.note ? `${embed.note} ` : null}
@@ -233,7 +305,7 @@ function Work() {
               </ul>
               {p.href && (
                 <a className="project__link" href={p.href} target="_blank" rel="noreferrer">
-                  View case study <ExternalLink size={13} />
+                  Source on GitHub <ExternalLink size={13} />
                 </a>
               )}
             </div>
@@ -269,7 +341,7 @@ function SkillsExperience() {
       <div className="skills" data-reveal>
         {SKILLS.map((g) => (
           <div key={g.group} className="skills__group">
-            <h4>{g.group}</h4>
+            <h3>{g.group}</h3>
             <ul>
               {g.items.map((it) => (
                 <li key={it}>{it}</li>
@@ -284,7 +356,7 @@ function SkillsExperience() {
           <li key={i} className="xp">
             <span className="xp__period">{e.period}</span>
             <div className="xp__body">
-              <h4 className="xp__role">{e.role}</h4>
+              <h3 className="xp__role">{e.role}</h3>
               <p className="xp__org">{e.org}</p>
               <ul>
                 {e.points.map((pt, j) => (
@@ -362,6 +434,14 @@ function Contact() {
           <ArrowUpRight size={16} />
         </a>
 
+        {CONTACT.cv && (
+          <a className="contact__cv" href={CONTACT.cv.href} download>
+            <Download size={14} />
+            {CONTACT.cv.label}
+            <span className="contact__cv-type">{CONTACT.cv.type}</span>
+          </a>
+        )}
+
         <div className="contact__socials">
           {SOCIALS.filter((s) => s.icon !== 'mail').map((soc) => {
             const Ico = SOCIAL_ICONS[soc.icon];
@@ -429,6 +509,14 @@ export default function HUD() {
     const root = viewport.current;
     if (!root) return;
 
+    // The page scrolls inside this element, not the document (body is
+    // overflow:hidden), so while focus sits on <body> the browser has nothing
+    // to scroll — Space/PageDown/arrows do nothing until the visitor tabs into
+    // a control. Focusing the scroller on mount gives those keys a target.
+    if (!document.activeElement || document.activeElement === document.body) {
+      root.focus({ preventScroll: true });
+    }
+
     pending.current = [...root.querySelectorAll('[data-reveal]')];
     sample(); // reveal whatever is on-screen at load
 
@@ -469,7 +557,7 @@ export default function HUD() {
       <TopBar />
       <ProgressRail />
 
-      <main ref={viewport} className="viewport" onScroll={onScroll}>
+      <main ref={viewport} className="viewport" tabIndex={-1} onScroll={onScroll}>
         <Hero />
         <Work />
         <SkillsExperience />
