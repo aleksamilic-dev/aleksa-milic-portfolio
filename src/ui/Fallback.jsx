@@ -1,12 +1,12 @@
 import { SECTIONS } from '../data.js';
 
-// 2D calm backdrop — shown on the `flat` tier only: no WebGL2 context, or a
-// genuinely weak device (see hooks.js useDeviceTier). There is no Calm toggle,
-// and prefers-reduced-motion deliberately isn't gated, so nothing else reaches
-// this. Fully static:
-// a dim floor, haze, and a horizon line with one node per section. The node
-// for the section in view lights up. It sits well behind the content and
-// never competes with it.
+// 2D calm backdrop — shown on the `flat` tier (no WebGL2 context, or a
+// genuinely weak device, see hooks.js useDeviceTier), or whenever `calm` is
+// true (the topbar's ambient-motion toggle, see MotionToggle in ui/HUD.jsx
+// and store.js — it starts from prefers-reduced-motion, then the toggle
+// owns it). Fully static: a dim floor, haze, and a horizon line with one
+// node per section. The node for the section in view lights up. It sits
+// well behind the content and never competes with it.
 export default function Fallback({ section = 0 }) {
   return (
     <div className="flat" aria-hidden>

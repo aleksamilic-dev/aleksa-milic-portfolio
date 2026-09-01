@@ -13,23 +13,45 @@ import {
   SKILLS,
   SOCIALS,
 } from '../data.js';
-import { ArrowDown, ArrowUpRight, Download, ExternalLink, SOCIAL_ICONS } from './icons.js';
+import { ArrowDown, ArrowUpRight, Download, ExternalLink, Pause, Play, SOCIAL_ICONS } from './icons.js';
 import { ISSUER_MARK } from './brands.jsx';
 import portrait from '../assets/aleksa.webp';
-
-const reduced = () =>
-  typeof window !== 'undefined' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function jumpTo(id) {
   const target = document.getElementById(`sec-${id}`);
   if (!target) return;
-  target.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+  // `calm` already accounts for prefers-reduced-motion (see store.js), so
+  // reading it here covers both the OS setting and the topbar toggle in one
+  // check rather than two that could disagree.
+  const instant = useFactory.getState().calm;
+  target.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'start' });
 }
 
 // ---------------------------------------------------------------------------
 // Chrome
 // ---------------------------------------------------------------------------
+// Sits among the social icons at the same size and weight, so it reads as
+// one more icon in that row rather than a distinct control. The icon shows
+// the action a click will take (Play while motion is already reduced), which
+// doubles as the state.
+function MotionToggle() {
+  const calm = useFactory((s) => s.calm);
+  const toggleCalm = useFactory((s) => s.toggleCalm);
+  const Icon = calm ? Play : Pause;
+  const label = calm ? 'Resume ambient motion' : 'Reduce ambient motion';
+  return (
+    <button
+      className="motion-toggle"
+      onClick={toggleCalm}
+      aria-pressed={calm}
+      aria-label={label}
+      title={label}
+    >
+      <Icon size={15} />
+    </button>
+  );
+}
+
 function TopBar() {
   return (
     <header className="topbar">
@@ -58,6 +80,7 @@ function TopBar() {
             </a>
           );
         })}
+        <MotionToggle />
       </div>
     </header>
   );

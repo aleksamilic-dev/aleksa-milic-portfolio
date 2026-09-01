@@ -21,6 +21,7 @@ export default function App() {
   const tier = useDeviceTier();
   const portrait = useMediaQuery('(max-width: 720px)');
   const section = useFactory((s) => s.section);
+  const calm = useFactory((s) => s.calm);
 
   if (INSPECT !== null) {
     return (
@@ -34,10 +35,18 @@ export default function App() {
     );
   }
 
+  // `tier` is a hardware-capability signal only (see hooks.js); it never
+  // reads prefers-reduced-motion. `calm` is the separate, visitor-facing
+  // preference — set once from the OS default, then owned by the topbar
+  // toggle — and it forces the same static backdrop the flat tier uses,
+  // which is what actually stops the 3D's motion (unmounting <Scene> halts
+  // its render loop; the CSS-level motion is handled by [data-motion] below).
+  const showFallback = tier === 'flat' || calm;
+
   return (
-    <div className="app" data-tier={tier} id="top">
+    <div className="app" data-tier={tier} data-motion={calm ? 'reduced' : 'full'} id="top">
       <div className="canvas-wrap">
-        {tier === 'flat' ? (
+        {showFallback ? (
           <Fallback section={section} />
         ) : (
           <Suspense fallback={null}>

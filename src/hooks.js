@@ -18,8 +18,10 @@ export function useMediaQuery(query) {
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
 // `lite` runs the 3D scene stripped down, `flat` is the static 2D backdrop —
 // only when WebGL genuinely can't run. Phones get `lite` + `portrait` (the
-// centreline camera path). The 3D runs for everyone else, animation and all;
-// prefers-reduced-motion is deliberately not gated here (site owner's call).
+// centreline camera path). This is a hardware read only, deliberately blind
+// to prefers-reduced-motion — that preference is handled separately by the
+// `calm` flag in store.js (topbar toggle, seeded from the OS setting), which
+// App.jsx also treats as forcing `flat` regardless of what this hook returns.
 const TIER_OVERRIDE = new URLSearchParams(
   typeof window !== 'undefined' ? window.location.search : '',
 ).get('tier');

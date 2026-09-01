@@ -417,15 +417,19 @@ a {
   gap: 16px;
 }
 
-.topbar__social a {
+.topbar__social a,
+.topbar__social button {
   color: var(--ink-mute);
   display: grid;
   place-items: center;
   padding: 5px;
+  background: none;
+  border: 0;
   transition: color 0.2s, transform 0.2s;
 }
 
-.topbar__social a:hover {
+.topbar__social a:hover,
+.topbar__social button:hover {
   color: var(--amber);
   transform: translateY(-2px);
 }
@@ -1025,6 +1029,12 @@ a {
   .project__embed-frame iframe {
     transition: none;
   }
+}
+
+/* mirrors the rule above for the manual toggle — see the block at the bottom
+   of this file for why the two are kept as separate selectors */
+[data-motion='reduced'] .project__embed-frame iframe {
+  transition: none;
 }
 
 /* ===========================================================================
@@ -1631,7 +1641,8 @@ a.cert:hover .cert__ext {
     margin-right: -10px;
   }
 
-  .topbar__social a {
+  .topbar__social a,
+  .topbar__social button {
     padding: 10px;
   }
 
@@ -1676,6 +1687,16 @@ a.cert:hover .cert__ext {
 /* ===========================================================================
    REDUCED MOTION
    =========================================================================== */
+/* Two triggers for the same freeze: the OS-level setting (unconditional,
+   applies even if the topbar toggle is somehow never reached) and the
+   [data-motion="reduced"] attribute App.jsx sets from the `calm` toggle
+   (ui/HUD.jsx MotionToggle, store.js). They're independent selectors rather
+   than one combined rule because @media can't be merged into a plain
+   selector list — but both write the same declarations, so it doesn't matter
+   which one matches. The bigger win, stopping the 3D outright, happens in
+   App.jsx by unmounting <Scene> — this block is the CSS-level motion that's
+   still there either way: the header's equalizer bars, the hero scroll cue,
+   hover transitions, and the reveal-on-scroll animation. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1694,4 +1715,22 @@ a.cert:hover .cert__ext {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+[data-motion='reduced'] *,
+[data-motion='reduced'] *::before,
+[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-motion='reduced'] .viewport {
+  scroll-behavior: auto;
+}
+
+[data-motion='reduced'] [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
 }
