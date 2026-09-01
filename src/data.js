@@ -134,14 +134,15 @@ export const PROJECTS = [
       src: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/#!/overview?g_v=1',
       external: true,
       title: 'Lineage graph',
-      blurb:
-        'The generated dbt docs, opened straight onto the lineage graph. Drag the ' +
-        'nodes, zoom, or right-click one to refocus the graph on it and hide ' +
-        'everything upstream or downstream of it. Regenerated on every push.',
       height: 'clamp(420px, 62vh, 620px)',
+      // dbt's graph sits 20px inside its own page, so the docs article behind it
+      // shows as a band around the frame and puts a scrollbar there that the
+      // shield makes unusable. Oversize the frame by that much and clip it.
+      inset: 20,
       activate: 'Click to explore the graph',
       repo: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/',
       repoLabel: 'Open the full dbt docs',
+      narrowLabel: 'Open the interactive lineage graph',
       // Rendered as native markup above the frame rather than inside it, so it
       // prerenders, stays on-brand, and costs nothing to load.
       stats: {
@@ -157,11 +158,6 @@ export const PROJECTS = [
           { name: 'relationships', n: 8, tone: 'amber' },
           { name: 'custom', n: 5, tone: 'ink-faint' },
         ],
-        note:
-          'Five seeds through five staging views into a five-dimension star. ' +
-          'dim_grower and dim_field are Type 2. The buyer and crop keys reach the ' +
-          'fact through stg_deliveries rather than a ref(), so dbt’s graph ' +
-          'draws no edge for them, but relationships tests enforce all five.',
       },
     },
   },

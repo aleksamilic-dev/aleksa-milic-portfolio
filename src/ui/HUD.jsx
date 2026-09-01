@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFactory } from '../store.js';
+import { useMediaQuery } from '../hooks.js';
 import {
   ABOUT,
   CERTIFICATIONS,
@@ -210,6 +211,13 @@ function ProjectEmbed({ embed }) {
   const [live, setLive] = useState(false);
   const source = embed.source;
 
+  // dbt's graph doesn't refit to a narrow frame, it just crops — below about a
+  // 960px frame you land on a corner of the DAG with the control bar wrapped
+  // over it. 1100px of viewport is where the embed lane still clears that, and
+  // it's already a breakpoint here. Narrower than that, hand off to the docs.
+  const wide = useMediaQuery('(min-width: 1100px)');
+  const showFrame = !embed.external || wide;
+
   useEffect(() => {
     if (!source) return; // cross-origin frame — nothing will talk back
     function onMessage(e) {
@@ -240,32 +248,50 @@ function ProjectEmbed({ embed }) {
     <div className="project__embed" data-reveal>
       <div className="project__embed-intro">
         <p className="project__embed-kicker">{embed.title}</p>
-        <p className="project__embed-blurb">{embed.blurb}</p>
+        {embed.blurb ? <p className="project__embed-blurb">{embed.blurb}</p> : null}
       </div>
       {embed.stats ? <EmbedStats stats={embed.stats} /> : null}
 
-      <div className="project__embed-frame">
-        <iframe
-          src={embed.src}
-          title={embed.frameTitle || embed.title}
-          loading="lazy"
-          style={{
-            height: embed.height || height,
-            pointerEvents: embed.external && !live ? 'none' : undefined,
-          }}
-        />
-        {embed.external && !live ? (
-          <button className="embed__shield" onClick={() => setLive(true)}>
-            <span>{embed.activate || 'Click to interact'}</span>
-          </button>
-        ) : null}
-      </div>
-      <p className="project__embed-note">
-        {embed.note ? `${embed.note} ` : null}
-        <a href={embed.repo} target="_blank" rel="noreferrer">
-          {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
+      {showFrame ? (
+        <div
+          className={`project__embed-frame${embed.inset ? ' project__embed-frame--crop' : ''}`}
+          style={
+            embed.inset
+              ? { height: embed.height, '--embed-inset': `${embed.inset}px` }
+              : undefined
+          }
+        >
+          <iframe
+            src={embed.src}
+            title={embed.frameTitle || embed.title}
+            loading="lazy"
+            scrolling={embed.inset ? 'no' : undefined}
+            style={{
+              pointerEvents: embed.external && !live ? 'none' : undefined,
+              ...(embed.inset ? null : { height: embed.height || height }),
+            }}
+          />
+          {embed.external && !live ? (
+            <button className="embed__shield" onClick={() => setLive(true)}>
+              <span>{embed.activate || 'Click to interact'}</span>
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <a className="embed__handoff" href={embed.repo} target="_blank" rel="noreferrer">
+          <span>{embed.narrowLabel || embed.repoLabel}</span>
+          <ExternalLink size={14} />
         </a>
-      </p>
+      )}
+
+      {showFrame ? (
+        <p className="project__embed-note">
+          {embed.note ? `${embed.note} ` : null}
+          <a href={embed.repo} target="_blank" rel="noreferrer">
+            {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }

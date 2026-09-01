@@ -809,6 +809,28 @@ a {
   overflow: hidden;
 }
 
+/* dbt draws its graph 20px inside its own page, so the docs article behind it
+   shows as a band around the frame and puts a scrollbar in that band which the
+   shield makes unusable. Oversize the frame by the inset on every side and let
+   the wrapper's overflow:hidden clip it, leaving just the graph. */
+.project__embed-frame--crop {
+  position: relative;
+}
+
+/* doubled class so the oversize beats the plain `.project__embed-frame iframe`
+   width:100% further down, which it ties with on specificity.
+   The extra width on the right is for dbt's own scrollbar: its graph panel is
+   overflow-y:auto over content 5px taller than itself, so it always draws one.
+   We can't restyle it from outside a cross-origin frame, so push it past the
+   clip instead. */
+.project__embed-frame.project__embed-frame--crop iframe {
+  position: absolute;
+  top: calc(var(--embed-inset) * -1);
+  left: calc(var(--embed-inset) * -1);
+  width: calc(100% + var(--embed-inset) * 2 + 16px);
+  height: calc(100% + var(--embed-inset) * 2);
+}
+
 /* Sits over a cross-origin frame until clicked, so scrolling the page past an
    embedded graph doesn't get captured by the graph's own zoom. */
 .embed__shield {
@@ -841,6 +863,34 @@ a {
 
 .embed__shield:hover span {
   border-color: var(--amber);
+}
+
+/* Stands in for the frame where the embedded graph would be cropped instead of
+   fitted. Handing the visitor to the real docs beats a broken viewport. */
+.embed__handoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--panel-line);
+  background: rgba(9, 12, 17, 0.4);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.embed__handoff:hover {
+  color: var(--ink);
+  border-color: var(--amber);
+}
+
+.embed__handoff svg {
+  color: var(--amber);
+  flex: none;
 }
 
 /* counts + test breakdown above an embed */
