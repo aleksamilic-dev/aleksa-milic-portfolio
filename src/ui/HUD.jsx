@@ -222,8 +222,6 @@ function EmbedStats({ stats }) {
           ))}
         </p>
       </div>
-
-      {stats.note ? <p className="estat__note">{stats.note}</p> : null}
     </div>
   );
 }
@@ -316,7 +314,6 @@ function ProjectEmbed({ embed }) {
 
       {showFrame ? (
         <p className="project__embed-note">
-          {embed.note ? `${embed.note} ` : null}
           <a href={embed.repo} target="_blank" rel="noreferrer">
             {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
           </a>

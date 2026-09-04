@@ -243,8 +243,12 @@ function Ladder({ position = [0, 0, 0], rotation = [0, 0, 0], y0 = 0, y1 = 3, ru
   const ref = useRef();
   useLayoutEffect(() => {
     const m = new THREE.Object3D();
+    // Math.max(…, 1): the only current call site never overrides `rungs`
+    // (always the default 12), but a single-rung ladder would divide by
+    // (rungs - 1) = 0 and place every rung at NaN.
+    const step = (y1 - y0 - 0.4) / Math.max(rungs - 1, 1);
     for (let i = 0; i < rungs; i++) {
-      m.position.set(0, y0 + 0.2 + ((y1 - y0 - 0.4) * i) / (rungs - 1), 0);
+      m.position.set(0, y0 + 0.2 + step * i, 0);
       m.updateMatrix();
       ref.current.setMatrixAt(i, m.matrix);
     }

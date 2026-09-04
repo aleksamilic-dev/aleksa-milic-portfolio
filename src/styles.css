@@ -991,14 +991,6 @@ a {
   font-weight: 500;
 }
 
-.estat__note {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--ink-mute);
-  max-width: 78ch;
-}
-
 .project__embed-frame iframe {
   display: block;
   width: 100%;
