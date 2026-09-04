@@ -56,6 +56,12 @@ try {
       // Strip the live 3D so the static file is just the readable HUD.
       document.querySelector('.app')?.setAttribute('data-tier', 'full');
       document.querySelector('.canvas-wrap')?.replaceChildren();
+      // Drop the motion attribute: baking this browser's answer in would tell
+      // a reduce-motion visitor reading the static HTML (JS off, or before the
+      // mount) that motion is fine. Absent, styles.css falls back to the OS
+      // media query — see the REDUCED MOTION block there. React sets it again
+      // on mount from the visitor's own preference.
+      document.querySelector('.app')?.removeAttribute('data-motion');
       // Reveal-on-scroll elements start at opacity:0; show them all so the
       // static page reads fully before JS runs. React manages the class after.
       document

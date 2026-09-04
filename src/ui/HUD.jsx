@@ -86,12 +86,16 @@ function TopBar() {
   );
 }
 
+// Writes progress as a custom property rather than a transform, so the two
+// orientations of the rail can each pick their own axis in CSS: the desktop
+// rail runs down the right edge (scaleY), the phone rail runs across under the
+// topbar (scaleX). Still a direct style write per frame — no React render.
 function RailFill() {
   const ref = useRef();
   useEffect(
     () =>
       useFactory.subscribe((s) => {
-        if (ref.current) ref.current.style.transform = `scaleY(${s.progress})`;
+        if (ref.current) ref.current.style.setProperty('--p', s.progress);
       }),
     [],
   );
@@ -102,7 +106,10 @@ function RailFill() {
   );
 }
 
-// Quiet progress indicator — a fill bar + one tick per section.
+// Quiet progress indicator — a fill bar + one tick per section. Vertical on
+// desktop, a thin horizontal strip under the topbar on phones (where it's the
+// only navigation and the only sense of page length there is: the scroll
+// container hides its scrollbar).
 function ProgressRail() {
   const active = useFactory((s) => s.section);
   return (
@@ -362,11 +369,7 @@ function Work() {
               <figure className="project__figure">
                 <img src={p.image} alt={p.imageAlt || `${p.title} screenshot`} loading="lazy" />
               </figure>
-            ) : p.embed ? null : (
-              <figure className="project__figure">
-                <span className="project__figure-ph">Dashboard / screenshot</span>
-              </figure>
-            )}
+            ) : null}
             {p.embed && <ProjectEmbed embed={p.embed} />}
           </li>
         ))}

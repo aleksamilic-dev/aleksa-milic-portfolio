@@ -1,0 +1,48 @@
+# Build the site on every push and pull request, then check that the committed
+# docs/ — which is what GitHub Pages actually serves — matches a fresh build of
+# src/. Editing src/ and forgetting to rebuild is the one way this repo can ship
+# a site that doesn't match its own source, and it's silent otherwise.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Chrome for the prerender step. Cached so the download isn't paid per run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Only the hashed assets are compared, not docs/index.html: that file is
+      # written by headless Chrome (scripts/prerender.mjs) and can differ in
+      # whitespace-level ways between machines. The assets are Vite's output and
+      # are byte-stable for the same input.
+      - name: docs/ must not be behind src/
+        run: |
+          if [ -n "$(git status --porcelain -- docs/assets)" ]; then
+            echo "::error::docs/assets differs from a fresh build. Run 'npm run build' and commit docs/."
+            git status --porcelain -- docs/assets
+            git diff --stat -- docs/assets
+            exit 1
+          fi
+          echo "docs/assets is in sync with src/."

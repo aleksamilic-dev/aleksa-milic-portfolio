@@ -14,13 +14,23 @@
 
   --ink: #eef3f7;
   --ink-mute: #a2b4c1;
-  --ink-faint: #6f8090;
+  /* was #6f8090 (4.85:1 on --void). The sections are translucent over a scene
+     with amber point lights, so the real background is lighter than --void in
+     places — this leaves headroom above AA instead of sitting on the line. */
+  --ink-faint: #7d92a2;
 
   --amber: #ff9d4d;
   --amber-bright: #ffc794;
   --blue: #4d9fd6;
   --blue-bright: #9ad7f5;
   --green: #5fd39a;
+
+  /* Two sizes carry every mono micro-label on the page. They were 10px and
+     9px, which is past the size a visitor skimming a laptop reads rather than
+     skips — and between them they run the kickers, dates, stack chips, cert
+     issuers and buttons. */
+  --micro: 11.5px;
+  --micro-sm: 10.5px;
 
   --gutter: clamp(20px, 6vw, 76px);
   --page: 1140px;
@@ -107,7 +117,7 @@ a {
 .contact__foot,
 .btn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
@@ -311,7 +321,7 @@ a {
 
 .brand__sub {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--micro-sm);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--amber);
@@ -347,10 +357,11 @@ a {
 }
 
 .rail__fill {
+  --p: 0; /* 0..1, written by RailFill in ui/HUD.jsx */
   position: absolute;
   inset: 0;
   transform-origin: top;
-  transform: scaleY(0);
+  transform: scaleY(var(--p));
   background: linear-gradient(var(--amber-bright), var(--amber));
   box-shadow: 0 0 10px rgba(255, 157, 77, 0.55);
   transition: transform 0.25s linear;
@@ -621,7 +632,7 @@ a {
   gap: 10px;
   padding-top: 10px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--micro-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--amber);
@@ -706,14 +717,6 @@ a {
   padding: clamp(10px, 2.4vw, 26px);
 }
 
-.project__figure-ph {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
 .project__index {
   font-size: 22px;
   font-weight: 600;
@@ -772,7 +775,7 @@ a {
   border: 1px solid var(--hair);
   background: rgba(18, 32, 42, 0.5);
   padding: 6px 10px;
-  font-size: 9px;
+  font-size: var(--micro-sm);
   letter-spacing: 0.08em;
   color: var(--ink-mute);
 }
@@ -865,7 +868,7 @@ a {
 
 .embed__shield span {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--ink);
@@ -894,7 +897,7 @@ a {
   border: 1px solid var(--panel-line);
   background: rgba(9, 12, 17, 0.4);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-mute);
@@ -928,7 +931,7 @@ a {
   margin: 0;
   align-items: baseline;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--ink-mute);
@@ -941,7 +944,7 @@ a {
 }
 
 .estat__counts b {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--amber);
@@ -965,7 +968,7 @@ a {
   gap: 7px 18px;
   margin: 11px 0 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-mute);
@@ -990,7 +993,7 @@ a {
 
 .estat__note {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.6;
   color: var(--ink-mute);
   max-width: 78ch;
@@ -1006,7 +1009,7 @@ a {
 .project__embed-note {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.03em;
   line-height: 1.5;
   color: var(--ink-faint);
@@ -1025,8 +1028,10 @@ a {
   border-color: var(--blue);
 }
 
+/* scoped the same way as the block at the bottom of this file, so the topbar
+   toggle is the single answer everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .project__embed-frame iframe {
+  .app:not([data-motion='full']) .project__embed-frame iframe {
     transition: none;
   }
 }
@@ -1075,7 +1080,7 @@ a {
 }
 
 .skills__group li {
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.04em;
   text-transform: none;
   color: var(--ink-mute);
@@ -1093,7 +1098,9 @@ a {
 
 .xp {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  /* wide enough for the longest period label ("Jan 2026 - Present") at the
+     mono micro size, with slack for font-loading differences */
+  grid-template-columns: 180px minmax(0, 1fr);
   gap: 22px;
 }
 
@@ -1184,7 +1191,7 @@ a {
   display: block;
   margin-bottom: 6px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--micro);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -1260,7 +1267,7 @@ a.cert:hover {
 
 .cert__issuer {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--micro-sm);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -1268,7 +1275,7 @@ a.cert:hover {
 
 .cert__level {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: var(--micro-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--amber);
@@ -1413,6 +1420,32 @@ a.cert:hover .cert__ext {
   text-shadow: 0 1px 14px rgba(6, 9, 13, 0.75), 0 1px 3px rgba(6, 9, 13, 0.6);
 }
 
+/* Same problem, smaller type: the mono micro-labels sit at --ink-faint over
+   the same translucent surface, and a machine's key light passing behind one
+   is exactly where 11px uppercase mono stops being readable. A tighter shadow
+   than the body copy gets — enough to seat the glyphs, not enough to smear
+   them at this size. */
+.section__kicker,
+.project__year,
+.project__facts dt,
+.project__stack li,
+.project__embed-note,
+.project__embed-kicker,
+.xp__period,
+.xp__org,
+.ledger__period,
+.ledger__org,
+.cert__issuer,
+.contact__foot,
+.contact__socials a,
+.contact__cv,
+.estat__counts,
+.estat__keys,
+.hero__eyebrow,
+.hero__cue {
+  text-shadow: 0 1px 8px rgba(6, 9, 13, 0.85), 0 1px 2px rgba(6, 9, 13, 0.7);
+}
+
 /* ===========================================================================
    REVEAL ON SCROLL
    =========================================================================== */
@@ -1428,39 +1461,81 @@ a.cert:hover .cert__ext {
 }
 
 /* ===========================================================================
-   2D CALM BACKDROP (flat tier only — see ui/Fallback.jsx)
+   2D CALM BACKDROP (see ui/Fallback.jsx)
    =========================================================================== */
+/* This is not a rare fallback any more. It's the backdrop for every viewport
+   under 1200px (hooks.js — the 3D corridor crops to black below that) as well
+   as for anyone who reduces motion, so it has to carry the page's identity on
+   its own rather than fade to a flat dark rectangle. Everything here is static:
+   no animation, no canvas, no JS beyond the active-section class. */
 .flat {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: radial-gradient(80% 55% at 70% 22%, #12222e 0, transparent 55%), var(--void);
+  background:
+    radial-gradient(58% 30% at 50% 57%, rgba(255, 157, 77, 0.13) 0, transparent 70%),
+    radial-gradient(85% 60% at 66% 20%, #16293a 0, transparent 58%),
+    var(--void);
+}
+
+/* the corridor walls, as two converging planes */
+.flat__floor::before,
+.flat__floor::after {
+  content: '';
+  position: absolute;
+  top: -46%;
+  bottom: 0;
+  width: 34%;
+  background-image: linear-gradient(rgba(77, 159, 214, 0.16) 1px, transparent 1px);
+  background-size: 100% 46px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.9), transparent);
+}
+
+.flat__floor::before {
+  left: 0;
+  transform: perspective(600px) rotateY(-38deg);
+  transform-origin: left center;
+}
+
+.flat__floor::after {
+  right: 0;
+  transform: perspective(600px) rotateY(38deg) scaleX(-1);
+  transform-origin: right center;
 }
 
 .flat__floor {
   position: absolute;
   inset: 42% -20% -20%;
-  background-image: linear-gradient(rgba(77, 159, 214, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77, 159, 214, 0.12) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(77, 159, 214, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77, 159, 214, 0.22) 1px, transparent 1px);
   background-size: 60px 60px;
   transform: perspective(520px) rotateX(62deg);
   transform-origin: top center;
   mask-image: linear-gradient(#000, transparent 78%);
 }
 
+/* keeps the grid off the copy without flattening it out of existence */
 .flat__haze {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 46%, transparent 40%, rgba(8, 11, 16, 0.72));
+  background: radial-gradient(circle at 50% 46%, transparent 46%, rgba(8, 11, 16, 0.62));
 }
 
+/* the conveyor: one node per section, the one in view lit */
 .flat__line {
   position: absolute;
   left: 8%;
   right: 8%;
   top: 56%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(77, 159, 214, 0.5) 12%, rgba(77, 159, 214, 0.5) 88%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(77, 159, 214, 0.75) 12%,
+    rgba(77, 159, 214, 0.75) 88%,
+    transparent
+  );
+  box-shadow: 0 0 22px rgba(77, 159, 214, 0.28);
 }
 
 .flat__nodes {
@@ -1477,13 +1552,34 @@ a.cert:hover .cert__ext {
   border-radius: 50%;
   border: 1px solid var(--blue);
   background: var(--void);
-  transition: background 0.4s, box-shadow 0.4s;
+  box-shadow: 0 0 10px rgba(77, 159, 214, 0.4);
+  transition: background 0.4s, box-shadow 0.4s, border-color 0.4s;
 }
 
 .flat__node.is-active {
   background: var(--amber);
   border-color: var(--amber);
-  box-shadow: 0 0 16px var(--amber);
+  box-shadow: 0 0 6px var(--amber), 0 0 22px rgba(255, 157, 77, 0.75);
+}
+
+/* The scrims above are calibrated against a lit, moving 3D corridor. The flat
+   backdrop is far dimmer and already carries its own haze, so the same scrims
+   erase it — lighten them when it's the one on screen. See data-backdrop in
+   App.jsx: this is "what's behind the copy", which a reduced-motion visitor on
+   a wide desktop answers differently from data-tier. */
+.app[data-backdrop='flat'] .canvas-wrap::after {
+  background: linear-gradient(180deg, rgba(8, 11, 16, 0.1) 0, rgba(8, 11, 16, 0.24) 100%);
+}
+
+.app[data-backdrop='flat'] .section--hero::before {
+  background: linear-gradient(
+    100deg,
+    rgba(8, 11, 16, 0.88) 0,
+    rgba(8, 11, 16, 0.66) 42%,
+    rgba(8, 11, 16, 0.26) 66%,
+    rgba(8, 11, 16, 0.06) 84%,
+    transparent 100%
+  );
 }
 
 /* ===========================================================================
@@ -1545,7 +1641,41 @@ a.cert:hover .cert__ext {
     --topbar-h: 60px;
   }
 
+  /* The rail is the only navigation on a phone, and the only cue for how long
+     the page is — the scroll container hides its scrollbar. Lay it flat under
+     the topbar instead of dropping it. */
   .rail {
+    top: var(--topbar-h);
+    right: 0;
+    left: 0;
+    transform: none;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+    height: 26px;
+    padding: 0 18px;
+    background: linear-gradient(180deg, rgba(8, 11, 16, 0.72), transparent);
+  }
+
+  .rail__track {
+    left: 18px;
+    right: 18px;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+    transform: none;
+  }
+
+  .rail__fill {
+    transform-origin: left;
+    transform: scaleX(var(--p));
+    background: linear-gradient(90deg, var(--amber-bright), var(--amber));
+  }
+
+  /* no hover on touch, so the tooltip can only ever get stuck open */
+  .rail__label {
     display: none;
   }
 
@@ -1646,11 +1776,6 @@ a.cert:hover .cert__ext {
     padding: 10px;
   }
 
-  /* empty project figures shouldn't dominate the column on a phone */
-  .project__figure:has(.project__figure-ph) {
-    min-height: 120px;
-  }
-
   .project {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1687,8 +1812,7 @@ a.cert:hover .cert__ext {
 /* ===========================================================================
    REDUCED MOTION
    =========================================================================== */
-/* Two triggers for the same freeze: the OS-level setting (unconditional,
-   applies even if the topbar toggle is somehow never reached) and the
+/* Two triggers for the same freeze: the OS-level setting and the
    [data-motion="reduced"] attribute App.jsx sets from the `calm` toggle
    (ui/HUD.jsx MotionToggle, store.js). They're independent selectors rather
    than one combined rule because @media can't be merged into a plain
@@ -1696,22 +1820,31 @@ a.cert:hover .cert__ext {
    which one matches. The bigger win, stopping the 3D outright, happens in
    App.jsx by unmounting <Scene> — this block is the CSS-level motion that's
    still there either way: the header's equalizer bars, the hero scroll cue,
-   hover transitions, and the reveal-on-scroll animation. */
+   hover transitions, and the reveal-on-scroll animation.
+
+   The OS half is scoped to :not([data-motion='full']) so that a visitor whose
+   OS says "reduce" but who then presses Resume ambient motion actually gets
+   all of it back — before, they got the 3D scene returned with every CSS
+   transition still frozen, and the toggle meant two different things depending
+   on which half you looked at. The attribute is absent until React mounts
+   (scripts/prerender.mjs strips it from the static HTML for exactly this
+   reason), so the OS setting still governs with JS off or not yet running. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .app:not([data-motion='full']),
+  .app:not([data-motion='full']) *,
+  .app:not([data-motion='full']) *::before,
+  .app:not([data-motion='full']) *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
 
-  .viewport {
+  .app:not([data-motion='full']) .viewport {
     scroll-behavior: auto;
   }
 
-  [data-reveal] {
+  .app:not([data-motion='full']) [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
   }

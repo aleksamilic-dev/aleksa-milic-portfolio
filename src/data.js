@@ -41,7 +41,7 @@ export const HERO = {
 };
 
 export const ABOUT =
-  'I’m a data engineer with around five years building pipelines and cloud ' +
+  'I’m a data engineer with four years building pipelines and cloud ' +
   'data platforms across AWS, Azure, and GCP, mostly on Databricks and Azure ' +
   'Data Factory. Enough of my time has gone into DevOps (containers, CI/CD, ' +
   'infrastructure-as-code) that I can take a pipeline from ingestion to ' +
@@ -133,7 +133,11 @@ export const PROJECTS = [
       src: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/#!/overview?g_v=1',
       external: true,
       title: 'Lineage graph',
-      height: 'clamp(420px, 62vh, 620px)',
+      // dbt fits the DAG to whatever viewport it's given, so an over-tall frame
+      // doesn't show more graph — it shows the same graph with a band of empty
+      // page colour under it, which is the one thing on this site that isn't
+      // in the palette. Sized to what the graph actually fills.
+      height: 'clamp(320px, 42vh, 430px)',
       // dbt's graph sits 20px inside its own page, so the docs article behind it
       // shows as a band around the frame and puts a scrollbar there that the
       // shield makes unusable. Oversize the frame by that much and clip it.
@@ -169,7 +173,7 @@ export const EXPERIENCE = [
     org: 'Ingsoftware / ASML',
     period: 'Jan 2026 – Present',
     points: [
-      'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS. Extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup holding 99.9% uptime.',
+      'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS. Extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup.',
       'Cut average runtime on critical Spark jobs by 40% through partition tuning, caching, and cluster right-sizing.',
       'Own data governance across Databricks and Delta Lake: quality checks, access control, and lineage for production datasets.',
     ],
@@ -179,8 +183,8 @@ export const EXPERIENCE = [
     org: 'Vega IT',
     period: 'Jun 2024 – Jan 2026',
     points: [
-      'Built and ran 20+ ETL/ELT pipelines on Azure Data Factory and Airflow, with reconciliation and data-quality controls that lifted accuracy by 35%.',
-      'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records. Schema design improved query performance by 40%.',
+      'Built and ran 20+ ETL/ELT pipelines on Azure Data Factory and Airflow, with reconciliation and data-quality controls gating every load.',
+      'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records: partitioning, distribution keys, and incremental models sized to the query patterns.',
       'Shipped 25+ Power BI dashboards and ran the platform DevOps: ECS/EKS with Docker and Kubernetes, Terraform IaC, multi-cloud CI/CD.',
     ],
   },
@@ -189,7 +193,7 @@ export const EXPERIENCE = [
     org: 'Gemini Software',
     period: 'Jul 2022 – Jun 2024',
     points: [
-      'Automated transformation and ingestion workflows in Python (Pandas, NumPy), cutting manual processing time by 60%.',
+      'Automated transformation and ingestion workflows in Python (Pandas, NumPy), replacing steps that had been run by hand.',
       'Handled cleansing and collation from internal and external sources. Wrote complex SQL with advanced joins, window functions, and CTEs.',
       'Integrated third-party APIs and contributed to AWS/Azure cloud-migration work.',
     ],
@@ -332,13 +336,24 @@ export const CAMERA_KEYFRAMES = [
   { pos: [-2.2, 2.1, -50], look: [-4.6, 1.2, -63] }, //   contact · shipping   (z -64)
 ];
 
-// Portrait / phone camera path. The landscape keyframes above pan left so
-// machinery sits in the right ~40% of a wide screen — a portrait phone has no
-// right 40%. This one rides straight down the corridor centreline at a constant
-// pulled-back offset (a gentle 3/4 from the right for depth), so each machine
-// drifts past small and legible with the corridor around it as you scroll.
-// Machine i sits at z = -STATION_GAP * i; storage (03) sits in the left lane so
-// its beat looks a touch left.
+// Portrait camera path. The landscape keyframes above pan left so machinery
+// sits in the right ~40% of a wide screen — a tall screen has no right 40%.
+// This one rides straight down the corridor centreline at a constant pulled-
+// back offset (a gentle 3/4 from the right for depth), so each machine drifts
+// past small and legible with the corridor around it as you scroll. Machine i
+// sits at z = -STATION_GAP * i; storage (03) sits in the left lane so its beat
+// looks a touch left.
+//
+// Which path a visitor gets is an ASPECT question, not a width one: three's
+// `fov` is vertical, so the horizontal frustum narrows with the aspect ratio
+// and nothing else. Projecting each machine's bounds through both cameras, the
+// landscape path holds every beat fully in frame down to aspect 1.0 and then
+// falls off fast (67% of the machine at 0.9, 33% at 0.7, nothing by 0.5),
+// while this one frames all five at every aspect from 0.42 to 2.4. So the
+// switch lives at 1/1 — see `portrait` in App.jsx. It used to key off
+// `max-width: 720px`, which is the same thing on a phone but leaves the band
+// above it wrong: a 768x1024 tablet is over 720px wide and gets the landscape
+// path at aspect 0.75, which cuts 33-44% off three of the five machines.
 export const CAMERA_WIDE_PORTRAIT = { pos: [2.4, 4.4, 17], look: [-1.6, 1.3, -6] };
 export const CAMERA_KEYFRAMES_PORTRAIT = [
   { pos: [1.2, 3.1, 11], look: [-1.7, 0.9, -4] }, //  ingestion  (z 0 — arrival: silo sits right-of-centre, low, so the title clears it)

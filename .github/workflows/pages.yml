@@ -1,0 +1,61 @@
+# Build and publish straight from src/, so docs/ no longer has to be committed.
+#
+# INERT UNTIL YOU OPT IN. Turning it on is two steps:
+#   1. Repo Settings -> Pages -> Build and deployment -> Source: "GitHub Actions"
+#   2. Uncomment the `push:` trigger below
+# Then stop tracking the build output:
+#   git rm -r --cached docs && printf 'docs/\n' >> .gitignore
+#   git commit -m "Publish from Actions instead of committing docs/"
+# (public/CNAME is copied into the build, so the custom domain survives.)
+#
+# Do steps 1 and 2 in that order. Deploying before Pages is set to "GitHub
+# Actions" fails the run, and removing docs/ before the first successful deploy
+# takes the live site down.
+name: Deploy to Pages
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a newer push supersede a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
