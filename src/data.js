@@ -69,8 +69,8 @@ export const PROJECTS = [
       'normalised and validated in Python, loaded into PostgreSQL, served as an ' +
       'Apache Superset dashboard.',
     role:
-      'Solo. Ingestion and validation, the SQL schema and views, the dashboard ' +
-      'as code, and the Dockerised deploy on one VM.',
+      'Ingestion and validation, the SQL schema and views, the dashboard as ' +
+      'code, and the Dockerised deploy on one VM.',
     stack: ['Python', 'PostgreSQL', 'Apache Superset', 'Docker', 'Caddy'],
     outcome:
       'Reproducible from a clean clone. Sources are checksummed and gaps are ' +
@@ -102,8 +102,8 @@ export const PROJECTS = [
       'cluster) against DuckDB, Polars and DataFusion on identical Parquet. How ' +
       'far does one machine get before a cluster earns its overhead?',
     role:
-      'Solo. Engine adapters, the timing and memory harness, a cross-run ' +
-      'correctness gate, the Dockerised cluster, CI, and the report generator.',
+      'Engine adapters, the timing and memory harness, a cross-run correctness ' +
+      'gate, the Dockerised cluster, CI, and the report generator.',
     stack: ['Apache Spark', 'DuckDB', 'Polars', 'DataFusion', 'Docker', 'TPC-H'],
     outcome:
       'The in-process engines finish ~10x faster than Spark at SF1 and SF10, and ' +
@@ -121,7 +121,7 @@ export const PROJECTS = [
       'operational feed modelled into a Kimball star schema with slowly-changing ' +
       'dimensions and a tested dbt layer.',
     role:
-      'Solo. The data model, the dbt project, 65 data tests, CI, and the published ' +
+      'The data model, the dbt project, the test suite, CI, and the published ' +
       'lineage site. A rebuild of an old Oracle and Apache NiFi coursework mart.',
     stack: ['dbt', 'DuckDB', 'Kimball / SCD2', 'GitHub Actions', 'SQL'],
     outcome:
