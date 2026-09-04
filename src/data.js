@@ -75,7 +75,13 @@ export const PROJECTS = [
     outcome:
       'Reproducible from a clean clone. Sources are checksummed and gaps are ' +
       'never zero-filled. The panel below is a self-contained rebuild.',
-    href: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
+    // No top-level `href` here on purpose: the embed below already links this
+    // same repo (as "Pipeline and methodology on GitHub"), and Work() only
+    // renders the plain "Source on GitHub" link when `href` is set — so this
+    // is the one project of the three that doesn't get that second, redundant
+    // link to the identical URL. Projects 2 and 3 keep `href`: #2 has no
+    // embed to carry it instead, and #3's embed links its published dbt docs,
+    // a different URL from its repo.
     image: null,
     imageAlt: '',
     embed: {
