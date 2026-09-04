@@ -13,13 +13,29 @@ export function MicrosoftMark(props) {
   );
 }
 
-// Three stacked isometric plates — the "lakehouse layers" read, in Databricks red.
+// The real mark (pulled from databricks.com's own icon) is a diamond sitting
+// over two open chevrons, drawn as one continuous stroke — not three solid
+// plates. Filled diamonds stacked with no gap between them was the bug: at
+// this icon's actual 21px render size they fuse into a single red lozenge
+// with no layer read at all, nothing like the source. A bold rounded stroke
+// with real gaps between the three shapes is what survives being that small.
 export function DatabricksMark(props) {
   return (
-    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden focusable="false" {...props}>
-      <path d="M12 0.5 20.5 4 12 7.5 3.5 4Z" fill="#ff6b4a" />
-      <path d="M12 8.5 20.5 12 12 15.5 3.5 12Z" fill="#ff4a2e" />
-      <path d="M12 16.5 20.5 20 12 23.5 3.5 20Z" fill="#ff3621" />
+    <svg
+      viewBox="0 0 24 24"
+      width="21"
+      height="21"
+      fill="none"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable="false"
+      {...props}
+    >
+      <path d="M12 1 20.5 5.3 12 9.6 3.5 5.3Z" stroke="#ff8a4d" />
+      <path d="M3.5 11.3 12 15.6 20.5 11.3" stroke="#ff5a2e" />
+      <path d="M3.5 17.3 12 21.6 20.5 17.3" stroke="#ff3621" />
     </svg>
   );
 }
