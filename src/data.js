@@ -28,7 +28,7 @@ export const HERO = {
   name: 'Aleksa Milic',
   role: 'Data Engineer',
   location: 'Niš, Serbia',
-  status: 'Open to talk',
+  status: 'Open to work',
   value:
     'I build and run data platforms end to end: Spark and Azure Data Factory ' +
     'pipelines, warehouses that stay fast at billions of rows, and the CI/CD ' +
@@ -73,7 +73,7 @@ export const PROJECTS = [
       'as code, and the Dockerised deploy on one VM.',
     stack: ['Python', 'PostgreSQL', 'Apache Superset', 'Docker', 'Caddy'],
     outcome:
-      'Reproducible from a clean clone; sources are checksummed and gaps are ' +
+      'Reproducible from a clean clone. Sources are checksummed and gaps are ' +
       'never zero-filled. The panel below is a self-contained rebuild.',
     href: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
     image: null,
@@ -82,10 +82,6 @@ export const PROJECTS = [
       src: '/nis-urban-development-radar.html',
       source: 'nis-radar',
       title: 'Live dashboard',
-      blurb:
-        'Three cross-filtered panels over the official series. Click a municipality ' +
-        'row and the KPI and chart re-render for it. The 2026 completed figures are a ' +
-        'labelled projection; everything else is real through 2025 (permits to May 2026).',
       repo: 'https://github.com/aleksamilic-dev/nis-urban-development-radar',
       repoLabel: 'Pipeline and methodology on GitHub',
       minHeight: 800,
@@ -123,7 +119,7 @@ export const PROJECTS = [
       'lineage site. A rebuild of an old Oracle and Apache NiFi coursework mart.',
     stack: ['dbt', 'DuckDB', 'Kimball / SCD2', 'GitHub Actions', 'SQL'],
     outcome:
-      'Rebuilds from a clean clone in one command; every CI run is gated on 65 data ' +
+      'Rebuilds from a clean clone in one command. Every CI run is gated on 65 data ' +
       'tests. Model docs and the lineage graph deploy to GitHub Pages on each push.',
     href: 'https://github.com/aleksamilic-dev/harvest-yield-warehouse',
     image: null,
@@ -173,7 +169,7 @@ export const EXPERIENCE = [
     org: 'Ingsoftware / ASML',
     period: 'Jan 2026 – Present',
     points: [
-      'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS; extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup holding 99.9% uptime.',
+      'Run distributed processing on Databricks and Spark over 10+ TB, with Delta Lake for ACID transactions on AWS. Extended the same patterns to GCP (BigQuery, Dataflow) for a multi-cloud setup holding 99.9% uptime.',
       'Cut average runtime on critical Spark jobs by 40% through partition tuning, caching, and cluster right-sizing.',
       'Own data governance across Databricks and Delta Lake: quality checks, access control, and lineage for production datasets.',
     ],
@@ -184,7 +180,7 @@ export const EXPERIENCE = [
     period: 'Jun 2024 – Jan 2026',
     points: [
       'Built and ran 20+ ETL/ELT pipelines on Azure Data Factory and Airflow, with reconciliation and data-quality controls that lifted accuracy by 35%.',
-      'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records; schema design improved query performance by 40%.',
+      'Architected warehouses on AWS Redshift and Databricks Delta Lake over 5+ billion records. Schema design improved query performance by 40%.',
       'Shipped 25+ Power BI dashboards and ran the platform DevOps: ECS/EKS with Docker and Kubernetes, Terraform IaC, multi-cloud CI/CD.',
     ],
   },
@@ -194,7 +190,7 @@ export const EXPERIENCE = [
     period: 'Jul 2022 – Jun 2024',
     points: [
       'Automated transformation and ingestion workflows in Python (Pandas, NumPy), cutting manual processing time by 60%.',
-      'Handled cleansing and collation from internal and external sources; wrote complex SQL with advanced joins, window functions, and CTEs.',
+      'Handled cleansing and collation from internal and external sources. Wrote complex SQL with advanced joins, window functions, and CTEs.',
       'Integrated third-party APIs and contributed to AWS/Azure cloud-migration work.',
     ],
   },
@@ -231,18 +227,18 @@ export const SKILLS = [
 export const SOCIALS = [
   { label: 'GitHub', href: 'https://github.com/aleksamilic-dev', icon: 'github' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/aleksa-milic', icon: 'linkedin' },
-  { label: 'Email', href: 'mailto:aleksamilic2224@gmail.com', icon: 'mail' },
+  { label: 'Email', href: 'mailto:aleksa@aleksa-milic.com', icon: 'mail' },
 ];
 
 export const CONTACT = {
-  email: 'aleksamilic2224@gmail.com',
+  email: 'aleksa@aleksa-milic.com',
   // Lives in public/, which Vite copies into docs/ verbatim — so the file the
   // site serves and the file you edit are the same one.
   cv: { href: '/Aleksa_Milic_CV.pdf', label: 'Download CV', type: 'PDF' },
   blurb:
-    'I’m at Ingsoftware these days, on ASML’s data platform. Always glad to ' +
-    'talk data platforms, Spark performance, or multi-cloud, role attached ' +
-    'or not. Email is the quickest way to reach me.',
+    'I’m at Ingsoftware these days, on ASML’s data platform. Open to work on ' +
+    'data platforms, Spark performance, or multi-cloud. Email is the quickest ' +
+    'way to reach me.',
 };
 
 // --- education & certifications --------------------------------------
