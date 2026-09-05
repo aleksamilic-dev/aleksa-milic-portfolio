@@ -1633,41 +1633,12 @@ a.cert:hover .cert__ext {
     --topbar-h: 60px;
   }
 
-  /* The rail is the only navigation on a phone, and the only cue for how long
-     the page is — the scroll container hides its scrollbar. Lay it flat under
-     the topbar instead of dropping it. */
+  /* Tried a flattened version of this under the topbar (a thin fill bar +
+     dots, so a phone would have some sense of page length and a way to jump
+     sections) — visually it crowded the topbar and the hero content right
+     under it, so back to hidden. The scroll container itself still works
+     fine as the only way to move through the page here. */
   .rail {
-    top: var(--topbar-h);
-    right: 0;
-    left: 0;
-    transform: none;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
-    height: 26px;
-    padding: 0 18px;
-    background: linear-gradient(180deg, rgba(8, 11, 16, 0.72), transparent);
-  }
-
-  .rail__track {
-    left: 18px;
-    right: 18px;
-    top: 50%;
-    bottom: auto;
-    width: auto;
-    height: 1px;
-    transform: none;
-  }
-
-  .rail__fill {
-    transform-origin: left;
-    transform: scaleX(var(--p));
-    background: linear-gradient(90deg, var(--amber-bright), var(--amber));
-  }
-
-  /* no hover on touch, so the tooltip can only ever get stuck open */
-  .rail__label {
     display: none;
   }
 
