@@ -1785,13 +1785,23 @@ a.cert:hover .cert__ext {
    still there either way: the header's equalizer bars, the hero scroll cue,
    hover transitions, and the reveal-on-scroll animation.
 
-   The OS half is scoped to :not([data-motion='full']) so that a visitor whose
-   OS says "reduce" but who then presses Resume ambient motion actually gets
-   all of it back — before, they got the 3D scene returned with every CSS
-   transition still frozen, and the toggle meant two different things depending
-   on which half you looked at. The attribute is absent until React mounts
-   (scripts/prerender.mjs strips it from the static HTML for exactly this
-   reason), so the OS setting still governs with JS off or not yet running. */
+   Both are scoped to :not([data-motion='full']) — deliberately, since the
+   site defaults to full motion even when the OS says "reduce" (store.js
+   initialCalm: a considered choice to run the ambient scene by default, not
+   an oversight). Once React mounts, [data-motion='full'] wins the :not()
+   check and this block sits inert for most visitors, even ones whose OS
+   prefers reduced motion, unless they've turned the topbar toggle on
+   themselves — at which point it (correctly) freezes everything, matching
+   what the 3D-scene side of the toggle already does. Before this scoping
+   existed, pressing Resume ambient motion while the OS said "reduce" got the
+   3D scene back with every CSS transition still frozen — the toggle meant
+   two different things depending on which half you looked at.
+
+   The one place the OS setting still governs on its own: the attribute is
+   absent until React mounts (scripts/prerender.mjs strips it from the static
+   HTML for exactly this reason), so with JS off or not yet running, a
+   reduced-motion visitor gets the safe, frozen default rather than a flash
+   of full motion before the site's own preference can apply. */
 @media (prefers-reduced-motion: reduce) {
   .app:not([data-motion='full']),
   .app:not([data-motion='full']) *,

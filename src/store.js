@@ -14,16 +14,15 @@ function storedMotion() {
   }
 }
 
-// First visit with no stored choice: follow the OS-level preference. After
-// that the button is the source of truth — this isn't re-read live, so
-// changing the OS setting later doesn't fight a choice already made here.
+// First visit with no stored choice: default to full motion — a deliberate
+// call to run the ambient scene by default rather than treat the OS-level
+// prefers-reduced-motion signal as an opt-out, since it's the site's one
+// visual centrepiece and most visitors who have that setting on didn't turn
+// it on because of this kind of ambient background. The topbar toggle is
+// still a one-tap way to turn it off, and once a visitor has picked either
+// way, the button/localStorage is the source of truth from then on.
 function initialCalm() {
-  const stored = storedMotion();
-  if (stored) return stored === 'reduced';
-  return (
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
+  return storedMotion() === 'reduced';
 }
 
 // Shared state between the HUD (which owns the scroll container) and the

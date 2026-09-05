@@ -44,15 +44,17 @@ export default function App() {
 
   // `tier` is a hardware-capability signal only (see hooks.js); it never
   // reads prefers-reduced-motion. `calm` is the separate, visitor-facing
-  // preference — set once from the OS default, then owned by the topbar
-  // toggle — and it forces the same static backdrop the flat tier uses,
-  // which is what actually stops the 3D's motion (unmounting <Scene> halts
-  // its render loop; the CSS-level motion is handled by [data-motion] below).
+  // preference, owned entirely by the topbar toggle (defaults to full motion
+  // regardless of the OS setting — see store.js) — and it forces the same
+  // static backdrop the flat tier uses, which is what actually stops the
+  // 3D's motion (unmounting <Scene> halts its render loop; the CSS-level
+  // motion is handled by [data-motion] below).
   const showFallback = tier === 'flat' || calm;
 
   // `data-backdrop` is what's actually behind the copy, which isn't the same
-  // question as `data-tier`: a wide desktop that has reduced motion is still
-  // tier 'full' but showing the flat backdrop. The scrims over the backdrop
+  // question as `data-tier`: a wide desktop where the visitor has turned the
+  // topbar toggle off is still tier 'full' but showing the flat backdrop.
+  // The scrims over the backdrop
   // are tuned per answer (styles.css), so they need this one, not the tier.
   return (
     <div

@@ -20,9 +20,9 @@ import portrait from '../assets/aleksa.webp';
 function jumpTo(id) {
   const target = document.getElementById(`sec-${id}`);
   if (!target) return;
-  // `calm` already accounts for prefers-reduced-motion (see store.js), so
-  // reading it here covers both the OS setting and the topbar toggle in one
-  // check rather than two that could disagree.
+  // `calm` is the visitor's own explicit choice (the topbar toggle — see
+  // store.js; it defaults to full motion regardless of the OS setting), so
+  // an instant jump only kicks in once they've actually turned it off.
   const instant = useFactory.getState().calm;
   target.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'start' });
 }
