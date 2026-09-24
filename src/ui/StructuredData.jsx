@@ -1,5 +1,4 @@
 import { CERTIFICATIONS, CONTACT, EDUCATION, EXPERIENCE, HERO, SITE, SKILLS, SOCIALS } from '../data.js';
-import portrait from '../assets/aleksa.webp';
 
 // schema.org profile for search engines, built from data.js so it can't drift
 // from the page copy. It renders inside the app, so the prerender bakes it into
@@ -8,9 +7,14 @@ import portrait from '../assets/aleksa.webp';
 //
 // WebSite is what Google takes the site name in results from. ProfilePage +
 // Person tie the page and the GitHub and LinkedIn profiles to one person,
-// which matters with this many namesakes.
+// which matters with this many namesakes. The headshot is both the Person's
+// image and the page's primaryImageOfPage: Google's way of saying which
+// picture stands for the page in Search, without touching og:image (the
+// social share card, which has no face on it).
 const person = { '@id': `${SITE.url}#person` };
 const website = { '@id': `${SITE.url}#website` };
+const photo = { '@id': `${SITE.url}#photo` };
+const photoUrl = new URL(HERO.photo.src, SITE.url).href;
 
 const current = EXPERIENCE.find((x) => x.period.endsWith('Present'));
 const schools = [...new Set(EDUCATION.map((e) => e.org))];
@@ -34,13 +38,23 @@ const GRAPH = {
       name: `${HERO.name} · ${HERO.role}`,
       isPartOf: website,
       mainEntity: person,
+      primaryImageOfPage: photo,
+    },
+    {
+      '@type': 'ImageObject',
+      ...photo,
+      url: photoUrl,
+      contentUrl: photoUrl,
+      width: HERO.photo.width,
+      height: HERO.photo.height,
+      caption: `${HERO.name}, ${HERO.role}`,
     },
     {
       '@type': 'Person',
       ...person,
       name: HERO.name,
       url: SITE.url,
-      image: new URL(portrait, SITE.url).href,
+      image: photo,
       jobTitle: HERO.role,
       description: SITE.summary,
       email: `mailto:${CONTACT.email}`,

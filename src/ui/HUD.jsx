@@ -15,7 +15,6 @@ import {
 } from '../data.js';
 import { ArrowDown, ArrowUpRight, Download, ExternalLink, Pause, Play, SOCIAL_ICONS } from './icons.js';
 import { ISSUER_MARK } from './brands.jsx';
-import portrait from '../assets/aleksa.webp';
 
 function jumpTo(id) {
   const target = document.getElementById(`sec-${id}`);
@@ -140,10 +139,10 @@ function ProfileCard() {
       <div className="profile__frame">
         <img
           className="profile__photo"
-          src={portrait}
-          alt={HERO.name}
-          width="800"
-          height="800"
+          src={HERO.photo.src}
+          alt={`${HERO.name}, ${HERO.role}`}
+          width={HERO.photo.width}
+          height={HERO.photo.height}
           decoding="async"
         />
       </div>

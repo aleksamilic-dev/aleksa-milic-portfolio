@@ -43,6 +43,10 @@ export const HERO = {
   role: 'Data Engineer',
   location: 'Niš, Serbia',
   status: 'Open to work',
+  // In public/ under a fixed, descriptive name, like the CV. Google Images
+  // indexes a photo by its URL, and a hashed asset name would hand it a new
+  // one every time the file changed. public/sitemap.xml lists it too.
+  photo: { src: '/aleksa-milic.webp', width: 800, height: 800 },
   value:
     'I build and run data platforms end to end: Spark and Azure Data Factory ' +
     'pipelines, warehouses that stay fast at billions of rows, and the CI/CD ' +
