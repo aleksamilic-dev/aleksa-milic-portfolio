@@ -43,7 +43,9 @@ assets differ from that fresh build.
 ## Content
 
 All copy and the scene layout live in `src/data.js`, and every section is filled
-in. Two of the three projects carry a live panel instead of a screenshot:
+in. The schema.org profile search engines read (`src/ui/StructuredData.jsx`) is
+built from the same file, so it can't drift from the page. The `<title>` and meta
+description stay in `index.html`. Two of the three projects carry a live panel instead of a screenshot:
 `PROJECTS[0]` embeds `public/nis-urban-development-radar.html`, which is
 same-origin and posts its height back so the iframe never scrolls internally;
 `PROJECTS[2]` frames the project's own published dbt docs, deep-linked straight

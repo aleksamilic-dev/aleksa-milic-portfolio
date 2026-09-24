@@ -23,6 +23,20 @@ export const PALETTE = {
   inkFaint: '#5d7280',
 };
 
+// --- search -------------------------------------------------------------
+// What Google reads about you beyond the page copy: ui/StructuredData.jsx
+// builds its schema.org profile from this and the sections below. The <title>
+// and meta description live in index.html, since they have to be in the page
+// before any JS runs.
+export const SITE = {
+  url: 'https://aleksa-milic.com/',
+  summary:
+    'Data engineer in Niš, Serbia with four years building pipelines and ' +
+    'multi-cloud data platforms on Databricks, Azure Data Factory, and Spark.',
+  // The field in general, listed ahead of the SKILLS tools.
+  topics: ['Data engineering', 'ETL', 'Data warehousing'],
+};
+
 // --- who ----------------------------------------------------------------
 export const HERO = {
   name: 'Aleksa Milic',

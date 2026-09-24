@@ -3,6 +3,7 @@ import { useFactory } from './store.js';
 import { useDeviceTier, useMediaQuery } from './hooks.js';
 import HUD from './ui/HUD.jsx';
 import Fallback from './ui/Fallback.jsx';
+import StructuredData from './ui/StructuredData.jsx';
 
 // three + drei + postprocessing are heavy; keep them out of the initial
 // bundle so the HUD paints immediately. The 3D is ambient backdrop only —
@@ -76,6 +77,7 @@ export default function App() {
 
       <HUD />
       <div className="grain" aria-hidden />
+      <StructuredData />
     </div>
   );
 }

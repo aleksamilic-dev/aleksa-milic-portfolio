@@ -139,6 +139,14 @@ a {
   }
 }
 
+/* React mounting over the prerendered page (main.jsx). The page is already on
+   screen, so the new shell mustn't fade in again. [data-motion] singles out
+   React's .app: the prerendered one has it stripped (scripts/prerender.mjs),
+   so it still gets its fade on first paint. */
+[data-swap] .app[data-motion] {
+  animation: none;
+}
+
 .canvas-wrap {
   position: absolute;
   inset: 0;
@@ -1450,6 +1458,12 @@ a.cert:hover .cert__ext {
 [data-reveal].in-view {
   opacity: 1;
   transform: none;
+}
+
+/* Set for HUD's first reveal pass when React mounts over the prerendered page:
+   what's on screen was already showing, so it shouldn't fade in again. */
+.viewport.is-swapping [data-reveal] {
+  transition: none;
 }
 
 /* ===========================================================================

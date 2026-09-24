@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFactory } from '../store.js';
 import { useMediaQuery } from '../hooks.js';
 import {
@@ -554,7 +554,10 @@ export default function HUD() {
 
   // Track the section in view for the nav + rail. The middle-band rootMargin
   // means a fast scroll can at worst leave this briefly stale, never stuck.
-  useEffect(() => {
+  // A layout effect so the first reveal pass lands before the new tree paints:
+  // when it replaces the prerendered page, a paint in between would show the
+  // hero at opacity 0 for a frame.
+  useLayoutEffect(() => {
     const root = viewport.current;
     if (!root) return;
 
@@ -567,7 +570,17 @@ export default function HUD() {
     }
 
     pending.current = [...root.querySelectorAll('[data-reveal]')];
-    sample(); // reveal whatever is on-screen at load
+    if (document.documentElement.hasAttribute('data-swap')) {
+      // Mounting over the prerendered page (main.jsx): what's on screen was
+      // already showing, so reveal it with transitions off. Reading layout
+      // settles those styles before the class comes off again.
+      root.classList.add('is-swapping');
+      sample();
+      void root.offsetHeight;
+      root.classList.remove('is-swapping');
+    } else {
+      sample(); // reveal whatever is on-screen at load
+    }
 
     if (!('IntersectionObserver' in window)) {
       pending.current.forEach((r) => r.classList.add('in-view'));

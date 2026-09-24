@@ -15,12 +15,26 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
-          r3f: ['@react-three/fiber', '@react-three/drei'],
+        // A manual chunk swallows every dependency no other chunk claims, so
+        // r3f used to take React, zustand (drei shares the store's copy) and
+        // Vite's preload helper along with it. The entry then imported all
+        // three from r3f, which imports three.js, and every visitor paid for
+        // the whole 3D stack (~300 kB gz) before the HUD could mount. That
+        // included the flat tier, which never draws it. Claiming the shared
+        // modules for `vendor` keeps the 3D chunks behind the lazy <Scene>
+        // import in App.jsx.
+        manualChunks(id) {
+          if (id.includes('vite/preload-helper')) return 'vendor';
+          // The top-level package, so a copy nested under another one stays
+          // with its owner: react-dom carries its own scheduler, and r3f its
+          // own zustand 3.
+          const pkg = id.match(/[\\/]node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)/)?.[1].replace('\\', '/');
+          if (pkg === 'three') return 'three';
+          if (pkg === '@react-three/fiber' || pkg === '@react-three/drei') return 'r3f';
           // postprocessing is only needed for the bloom/vignette pass — keep it
           // in its own chunk so it downloads in parallel with the rest.
-          postfx: ['@react-three/postprocessing', 'postprocessing'],
+          if (pkg === 'postprocessing' || pkg === '@react-three/postprocessing') return 'postfx';
+          if (['react', 'react-dom', 'zustand'].includes(pkg)) return 'vendor';
         },
       },
     },
