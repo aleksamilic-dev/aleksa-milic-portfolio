@@ -57,6 +57,16 @@ The CV linked from the contact section is `public/Aleksa_Milic_CV.pdf`. Vite
 copies `public/` into `docs/` verbatim, so replacing that file and rebuilding is
 all it takes to publish a new one.
 
+## Analytics
+
+[GoatCounter](https://aleksa-milic.goatcounter.com) counts page views. It
+sets no cookies, so the site needs no consent banner. The tag lives in
+`index.html`. Clicks a page view can't see (the CV download, email, GitHub and
+LinkedIn) go through `track()` in `src/ui/HUD.jsx` and show up as events.
+count.js ignores localhost, so local dev and the prerender never count. To stop
+counting your own visits, open `https://aleksa-milic.com/#toggle-goatcounter`
+once in each browser you use.
+
 ## The scene
 
 `src/hooks.js` picks a capability tier (`full` / `lite` / `flat`) from WebGL2
