@@ -71,6 +71,12 @@ try {
         .querySelectorAll('[style]')
         .forEach((n) => n.matches('.rail__fill, .viewport') && n.removeAttribute('style'));
       document.querySelectorAll('.viewport').forEach((v) => (v.scrollTop = 0));
+      // A baked iframe starts loading from the static HTML, then React's mount
+      // swaps in a fresh one and every visitor pays for each embed twice. That
+      // includes the cross-origin dbt docs even on phones, where React renders
+      // a hand-off link instead of the frame. React sets its own src, so the
+      // static copies don't need one.
+      document.querySelectorAll('iframe').forEach((f) => f.removeAttribute('src'));
       // Styles three/drei/postprocessing inject at runtime (prod Vite emits a
       // <link>, so anything here is library-injected and now dead).
       document.querySelectorAll('head > style').forEach((s) => s.remove());

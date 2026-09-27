@@ -26,6 +26,14 @@ function jumpTo(id) {
   target.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'start' });
 }
 
+// Records a click as an event in GoatCounter, the cookie-free analytics that
+// index.html loads. Page views count themselves. These are the visits that go
+// somewhere a page view can't see: the CV, an email, a profile. Does nothing
+// until count.js has loaded, or at all if a blocker stopped it.
+function track(path, title) {
+  window.goatcounter?.count?.({ path, title, event: true });
+}
+
 // ---------------------------------------------------------------------------
 // Chrome
 // ---------------------------------------------------------------------------
@@ -74,6 +82,7 @@ function TopBar() {
               aria-label={soc.label}
               target={soc.href.startsWith('http') ? '_blank' : undefined}
               rel="noreferrer"
+              onClick={() => track(soc.icon, soc.label)}
             >
               <Ico size={15} />
             </a>
@@ -477,13 +486,22 @@ function Contact() {
       <div className="contact" data-reveal>
         <p className="contact__blurb">{CONTACT.blurb}</p>
 
-        <a className="contact__email" href={`mailto:${CONTACT.email}`}>
+        <a
+          className="contact__email"
+          href={`mailto:${CONTACT.email}`}
+          onClick={() => track('mail', 'Email')}
+        >
           {CONTACT.email}
           <ArrowUpRight size={16} />
         </a>
 
         {CONTACT.cv && (
-          <a className="contact__cv" href={CONTACT.cv.href} download>
+          <a
+            className="contact__cv"
+            href={CONTACT.cv.href}
+            download
+            onClick={() => track('cv-download', CONTACT.cv.label)}
+          >
             <Download size={14} />
             {CONTACT.cv.label}
             <span className="contact__cv-type">{CONTACT.cv.type}</span>
@@ -494,7 +512,13 @@ function Contact() {
           {SOCIALS.filter((s) => s.icon !== 'mail').map((soc) => {
             const Ico = SOCIAL_ICONS[soc.icon];
             return (
-              <a key={soc.label} href={soc.href} target="_blank" rel="noreferrer">
+              <a
+                key={soc.label}
+                href={soc.href}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => track(soc.icon, soc.label)}
+              >
                 <Ico size={15} /> {soc.label}
               </a>
             );

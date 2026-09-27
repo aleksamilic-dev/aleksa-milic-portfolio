@@ -14,8 +14,12 @@
 <style>
   /* Dark-committed palette — this page replicates a specific dark BI dashboard
      (Apache Superset), so it deliberately renders one visual world. Every color
-     is painted explicitly so the page holds on any host ground. */
+     is painted explicitly so the page holds on any host ground. The one thing
+     CSS colors can't reach is what the browser draws itself: without
+     color-scheme, a scrollbar (the frame's own mid-resize, or the table's
+     sideways one on a phone) comes up light. */
   :root {
+    color-scheme: dark;
     --bg: #0c0c0e;
     --panel: #17171a;
     --panel-2: #1f1f24;
