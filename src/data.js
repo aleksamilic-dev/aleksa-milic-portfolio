@@ -290,6 +290,12 @@ export const EDUCATION = [
 // public credential.
 export const CERTIFICATIONS = [
   {
+    name: 'Microsoft Certified: Fabric Analytics Engineer Associate',
+    issuer: 'Microsoft',
+    level: 'Associate',
+    href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/328a5c1dcc0a9804',
+  },
+  {
     name: 'Microsoft Certified: SQL AI Developer Associate',
     issuer: 'Microsoft',
     level: 'Associate',
@@ -300,12 +306,6 @@ export const CERTIFICATIONS = [
     issuer: 'Microsoft',
     level: 'Associate',
     href: 'https://learn.microsoft.com/en-us/users/aleksamilic-9741/credentials/2f8a1b129206564',
-  },
-  {
-    name: 'Databricks Generative AI Fundamentals',
-    issuer: 'Databricks',
-    level: 'Fundamentals',
-    href: 'https://credentials.databricks.com/a19fc6fc-5a93-4121-be99-81a2e97cb347#acc.k7pDhwHX',
   },
   {
     name: 'Databricks Platform Fundamentals',
