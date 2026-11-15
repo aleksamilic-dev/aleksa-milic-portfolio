@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { Float } from '@react-three/drei';
 import { MACHINES, PALETTE } from '../data.js';
 import { useFactory } from '../store.js';
+import { flow } from './flow.jsx';
+import { LIVE, StaticBatch } from './batch.jsx';
 import { Band, BoltRing, Gear, Node, Pipe, Screen, cast, steel } from './primitives.jsx';
 
 // Every machine here runs at roughly half the animation speed and half the
@@ -18,14 +20,13 @@ import { Band, BoltRing, Gear, Node, Pipe, Screen, cast, steel } from './primiti
 const GAUGE_H = 1.4; // level-gauge travel, shared by the render + fill animation
 const GAUGE_FOOT = -0.8;
 
-export function IngestionDock({ active = true }) {
+export function IngestionDock() {
   const rotor = useRef();
   const grille = useRef();
   const fill = useRef();
   const valve = useRef();
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const t = clock.elapsedTime;
+  useFrame(() => {
+    const t = flow.t;
     if (rotor.current) rotor.current.rotation.y = t * 0.3;
     if (grille.current)
       grille.current.material.emissiveIntensity = 0.7 + Math.sin(t * 1.6) * 0.3;
@@ -72,7 +73,7 @@ export function IngestionDock({ active = true }) {
         <boxGeometry args={[0.36, 0.32, 0.36]} />
         <meshStandardMaterial {...cast('dark')} />
       </mesh>
-      <mesh ref={valve} position={[0, 0.33, 0.19]}>
+      <mesh userData={LIVE} ref={valve} position={[0, 0.33, 0.19]}>
         <planeGeometry args={[0.15, 0.15]} />
         <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.3} toneMapped={false} />
       </mesh>
@@ -136,7 +137,7 @@ export function IngestionDock({ active = true }) {
           <boxGeometry args={[0.42, 0.34, 0.34]} />
           <meshStandardMaterial {...steel('dark', { roughness: 0.44 })} />
         </mesh>
-        <group ref={rotor} position={[0, 0.04, 0]}>
+        <group userData={LIVE} ref={rotor} position={[0, 0.04, 0]}>
           {Array.from({ length: 8 }, (_, i) => {
             const a = (i / 8) * Math.PI * 2;
             return (
@@ -169,7 +170,7 @@ export function IngestionDock({ active = true }) {
             <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
           </mesh>
         ))}
-        <mesh ref={grille} position={[0, -0.02, 0.05]}>
+        <mesh userData={LIVE} ref={grille} position={[0, -0.02, 0.05]}>
           <planeGeometry args={[0.78, 0.46]} />
           <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.9} toneMapped={false} />
         </mesh>
@@ -187,7 +188,7 @@ export function IngestionDock({ active = true }) {
           <boxGeometry args={[0.12, 1.66, 0.08]} />
           <meshStandardMaterial {...cast('dark', { roughness: 0.6 })} />
         </mesh>
-        <mesh ref={fill} position={[0, 0, 0.04]}>
+        <mesh userData={LIVE} ref={fill} position={[0, 0, 0.04]}>
           <boxGeometry args={[0.06, GAUGE_H, 0.03]} />
           <meshStandardMaterial color={PALETTE.green} emissive={PALETTE.green} emissiveIntensity={1} toneMapped={false} />
         </mesh>
@@ -285,13 +286,12 @@ function Ladder({ position = [0, 0, 0], rotation = [0, 0, 0], y0 = 0, y1 = 3, ru
 // intake end, tumbles through the glowing core, and leaves the tapered outlet
 // refined. A gear-motor turns the drum on its trunnion rollers.
 // ---------------------------------------------------------------------------
-export function ProcessingHall({ active = true }) {
+export function ProcessingHall() {
   const drum = useRef();
   const coreA = useRef();
   const coreB = useRef();
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const t = clock.elapsedTime;
+  useFrame(() => {
+    const t = flow.t;
     if (drum.current) drum.current.rotation.x = t * 0.42;
     const pulse = 1.15 + Math.sin(t * 3) * 0.45;
     if (coreA.current) coreA.current.material.emissiveIntensity = pulse * 0.78;
@@ -324,7 +324,7 @@ export function ProcessingHall({ active = true }) {
       {/* rotating reactor shell — turns on its X axis, riding the trunnions.
           Faintly translucent so the two-tone core reads through the wall;
           front-face only (the hero camera never sees the far wall). */}
-      <group ref={drum}>
+      <group userData={LIVE} ref={drum}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[1.14, 1.14, 3.3, 28, 1, true]} />
           <meshStandardMaterial
@@ -374,11 +374,11 @@ export function ProcessingHall({ active = true }) {
 
       {/* two-tone core: a short raw (amber) intake zone, then most of the length
           runs refined (blue) — the change happens early as it tumbles through */}
-      <mesh ref={coreA} rotation={[0, 0, Math.PI / 2]} position={[-1.06, 0, 0]}>
+      <mesh userData={LIVE} ref={coreA} rotation={[0, 0, Math.PI / 2]} position={[-1.06, 0, 0]}>
         <cylinderGeometry args={[0.56, 0.64, 1.7, 24]} />
         <meshStandardMaterial color={PALETTE.amberBright} emissive={PALETTE.amber} emissiveIntensity={0.9} toneMapped={false} />
       </mesh>
-      <mesh ref={coreB} rotation={[0, 0, Math.PI / 2]} position={[0.72, 0, 0]}>
+      <mesh userData={LIVE} ref={coreB} rotation={[0, 0, Math.PI / 2]} position={[0.72, 0, 0]}>
         <cylinderGeometry args={[0.64, 0.46, 2.5, 24]} />
         <meshStandardMaterial color={PALETTE.blueBright} emissive={PALETTE.blueBright} emissiveIntensity={1.4} toneMapped={false} />
       </mesh>
@@ -461,11 +461,10 @@ export function ProcessingHall({ active = true }) {
 // ---------------------------------------------------------------------------
 // 03 — Storage Vault : a medallion rack, bronze / silver / gold tiers
 // ---------------------------------------------------------------------------
-export function StorageVault({ active = true }) {
+export function StorageVault() {
   const cells = useRef([]);
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const t = clock.elapsedTime;
+  useFrame(() => {
+    const t = flow.t;
     cells.current.forEach((c, i) => {
       if (c) c.material.emissiveIntensity = 0.2 + Math.abs(Math.sin(t * 0.8 + i * 1.3)) * 1.3;
     });
@@ -556,7 +555,7 @@ export function StorageVault({ active = true }) {
           {Array.from({ length: 7 }, (_, c) => {
             const my = idx++;
             return (
-              <mesh key={c} ref={(el) => (cells.current[my] = el)} position={[-0.78 + c * 0.26, -0.06, 0.65]}>
+              <mesh userData={LIVE} key={c} ref={(el) => (cells.current[my] = el)} position={[-0.78 + c * 0.26, -0.06, 0.65]}>
                 <boxGeometry args={[0.13, 0.08, 0.03]} />
                 <meshStandardMaterial color={tier.led} emissive={tier.led} emissiveIntensity={0.55} toneMapped={false} />
               </mesh>
@@ -594,11 +593,11 @@ export function StorageVault({ active = true }) {
 
 function Shuttle() {
   const ref = useRef();
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.position.y = 1.7 + Math.sin(clock.elapsedTime * 0.4) * 1.3;
+  useFrame(() => {
+    if (ref.current) ref.current.position.y = 1.7 + Math.sin(flow.t * 0.4) * 1.3;
   });
   return (
-    <group ref={ref} position={[1.18, 1.7, 0.62]}>
+    <group userData={LIVE} ref={ref} position={[1.18, 1.7, 0.62]}>
       <mesh>
         <boxGeometry args={[0.32, 0.3, 0.34]} />
         <meshStandardMaterial {...steel('dark', { roughness: 0.4 })} />
@@ -629,15 +628,14 @@ function Wing({ top, bottom }) {
   );
 }
 
-export function ControlRoom({ active = true }) {
+export function ControlRoom() {
   const bars = useRef([]);
   const bars2 = useRef([]);
   const wave = useRef();
   const ticker = useRef();
   const blip = useRef();
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const t = clock.elapsedTime;
+  useFrame(() => {
+    const t = flow.t;
     const grow = (arr, sp) =>
       arr.forEach((b, i) => {
         if (!b) return;
@@ -714,7 +712,7 @@ export function ControlRoom({ active = true }) {
             <planeGeometry args={[2.2, 0.16]} />
             <meshBasicMaterial color="#0a2233" toneMapped={false} />
           </mesh>
-          <mesh ref={ticker} position={[0, -0.5, 0.025]}>
+          <mesh userData={LIVE} ref={ticker} position={[0, -0.5, 0.025]}>
             <planeGeometry args={[0.5, 0.1]} />
             <meshBasicMaterial color={PALETTE.amber} toneMapped={false} />
           </mesh>
@@ -725,13 +723,13 @@ export function ControlRoom({ active = true }) {
       <group position={[-2.34, 0.4, 0.08]} rotation={[0, 0.2, 0]}>
         <Wing
           top={Array.from({ length: 6 }, (_, i) => (
-            <mesh key={`t${i}`} ref={(el) => (bars2.current[i] = el)} position={[-0.62 + i * 0.25, -0.31, 0.02]}>
+            <mesh userData={LIVE} key={`t${i}`} ref={(el) => (bars2.current[i] = el)} position={[-0.62 + i * 0.25, -0.31, 0.02]}>
               <boxGeometry args={[0.16, 1, 0.02]} />
               <meshBasicMaterial color={i === 4 ? PALETTE.amber : PALETTE.green} toneMapped={false} />
             </mesh>
           ))}
           bottom={Array.from({ length: 6 }, (_, i) => (
-            <mesh key={`b${i}`} ref={(el) => (bars.current[i] = el)} position={[-0.62 + i * 0.25, -0.31, 0.02]}>
+            <mesh userData={LIVE} key={`b${i}`} ref={(el) => (bars.current[i] = el)} position={[-0.62 + i * 0.25, -0.31, 0.02]}>
               <boxGeometry args={[0.16, 1, 0.02]} />
               <meshBasicMaterial color={PALETTE.blueBright} toneMapped={false} />
             </mesh>
@@ -743,7 +741,7 @@ export function ControlRoom({ active = true }) {
       <group position={[2.34, 0.4, 0.08]} rotation={[0, -0.2, 0]}>
         <Wing
           top={
-            <mesh ref={wave} geometry={waveGeo} position={[0, 0, 0.02]}>
+            <mesh userData={LIVE} ref={wave} geometry={waveGeo} position={[0, 0, 0.02]}>
               <meshBasicMaterial color={PALETTE.green} wireframe toneMapped={false} />
             </mesh>
           }
@@ -802,7 +800,7 @@ export function ControlRoom({ active = true }) {
             <coneGeometry args={[0.1, 0.16, 12, 1, true]} />
             <meshStandardMaterial {...steel('light', { roughness: 0.3 })} side={THREE.DoubleSide} />
           </mesh>
-          <mesh ref={blip} position={[0.28, 0.68, 0.3]}>
+          <mesh userData={LIVE} ref={blip} position={[0.28, 0.68, 0.3]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             <meshBasicMaterial color={PALETTE.amberBright} transparent opacity={0.7} toneMapped={false} />
           </mesh>
@@ -894,15 +892,14 @@ function Crate({ size = 0.8, w = size * 1.1, h = size, d = size * 1.35, lit = fa
   );
 }
 
-export function ShippingDock({ active = true }) {
+export function ShippingDock() {
   const crate = useRef();
   const gate = useRef();
   const scan = useRef();
   const belt = useRef();
   const drive = useRef();
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const t = clock.elapsedTime;
+  useFrame(() => {
+    const t = flow.t;
     if (crate.current) {
       const p = (t * 0.12) % 1;
       crate.current.position.z = 1.5 - p * 5.3;
@@ -965,7 +962,7 @@ export function ShippingDock({ active = true }) {
           <meshStandardMaterial color="#20272f" metalness={0.3} roughness={0.8} />
         </mesh>
         {/* travelling belt cleats — the group slides one slot then wraps */}
-        <group ref={belt} position={[0, -0.82, -4.1]}>
+        <group userData={LIVE} ref={belt} position={[0, -0.82, -4.1]}>
           {Array.from({ length: 13 }, (_, i) => (
             <mesh key={i} position={[0, 0, i * 0.5]}>
               <boxGeometry args={[1.5, 0.03, 0.06]} />
@@ -974,7 +971,7 @@ export function ShippingDock({ active = true }) {
           ))}
         </group>
         {/* head/drive drum at the gate end */}
-        <mesh ref={drive} position={[0, -0.9, -4.35]} rotation={[0, 0, Math.PI / 2]}>
+        <mesh userData={LIVE} ref={drive} position={[0, -0.9, -4.35]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.19, 0.19, 1.72, 18]} />
           <meshStandardMaterial {...steel('steel', { roughness: 0.34 })} />
         </mesh>
@@ -1016,7 +1013,7 @@ export function ShippingDock({ active = true }) {
           <planeGeometry args={[2.5, 2.62]} />
           <meshBasicMaterial color="#08243a" toneMapped={false} />
         </mesh>
-        <mesh ref={gate} position={[0, 0, -0.1]}>
+        <mesh userData={LIVE} ref={gate} position={[0, 0, -0.1]}>
           <planeGeometry args={[2.5, 2.62]} />
           <meshStandardMaterial color={PALETTE.blueDeep} emissive={PALETTE.blue} emissiveIntensity={0.7} toneMapped={false} />
         </mesh>
@@ -1032,7 +1029,7 @@ export function ShippingDock({ active = true }) {
           </mesh>
         ))}
         {/* travelling scan bar */}
-        <mesh ref={scan} position={[0, 0, 0.0]}>
+        <mesh userData={LIVE} ref={scan} position={[0, 0, 0.0]}>
           <boxGeometry args={[2.48, 0.13, 0.02]} />
           <meshBasicMaterial color="#eaf7ff" toneMapped={false} />
         </mesh>
@@ -1051,7 +1048,7 @@ export function ShippingDock({ active = true }) {
       <Crate position={[1.28, -0.68, -2.9]} size={0.72} rotation={[0, 0.24, 0]} />
 
       {/* container in transit down the belt toward the gate */}
-      <group ref={crate} position={[0, -0.18, 1.5]}>
+      <group userData={LIVE} ref={crate} position={[0, -0.18, 1.5]}>
         <Crate size={0.82} lit />
       </group>
     </group>
@@ -1069,17 +1066,26 @@ const MACHINE_PARTS = [
   ShippingDock,
 ];
 
+// Each machine's element, built once. Stations re-renders whenever the machine
+// in focus changes, and handing React the very same element each time lets it
+// skip the machine's whole tree (60 to 80 parts) instead of diffing it. The
+// machines animate whether or not they're on screen: it's a few property
+// writes a frame, and it means one never jumps when it comes back into view.
+const MACHINE_ELEMENTS = MACHINE_PARTS.map((Machine, i) => (
+  <StaticBatch key={i}>
+    <Machine />
+  </StaticBatch>
+));
+
 export function Stations() {
   // All five machines mount once, at load (with <Preload> compiling their
   // shaders then) — building one mid-scroll cost a ~400ms frame. Only the
   // focused machine and its neighbours are drawn (`visible`); the rest sit
-  // hidden and static, which costs nothing per frame. Only the machine in
-  // focus floats + animates.
+  // hidden, which costs nothing to render. Only the machine in focus floats.
   const focus = useFactory((s) => Math.round(s.progress * (MACHINES.length - 1)));
   return (
     <>
       {MACHINES.map((machine, i) => {
-        const Machine = MACHINE_PARTS[i];
         const dist = Math.abs(i - focus);
         return (
           <group key={machine.id} position={[0, 0, machine.z]}>
@@ -1091,7 +1097,7 @@ export function Stations() {
                 floatIntensity={0.09}
                 floatingRange={[-0.03, 0.03]}
               >
-                <Machine active={dist <= 1} />
+                {MACHINE_ELEMENTS[i]}
               </Float>
             </group>
             {/* station marker on the floor */}

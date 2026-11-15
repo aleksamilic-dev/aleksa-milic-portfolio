@@ -45,13 +45,30 @@ assets differ from that fresh build.
 All copy and the scene layout live in `src/data.js`, and every section is filled
 in. The schema.org profile search engines read (`src/ui/StructuredData.jsx`) is
 built from the same file, so it can't drift from the page. The `<title>` and meta
-description stay in `index.html`. Two of the three projects carry a live panel instead of a screenshot:
-`PROJECTS[0]` embeds `public/nis-urban-development-radar.html`, which is
-same-origin and posts its height back so the iframe never scrolls internally;
-`PROJECTS[2]` frames the project's own published dbt docs, deep-linked straight
-onto the lineage graph. Cross-origin embeds are marked `external` — they get a
-fixed height, a click-to-activate shield so the page can still be scrolled past
-them, and a hand-off link instead of the frame below 1100px.
+description stay in `index.html`.
+
+Each project shows its evidence in its own way:
+
+- `PROJECTS[0].embed` frames `public/nis-urban-development-radar.html`, a live
+  page of our own. It is same-origin and posts its height back, so the iframe
+  never scrolls internally.
+- `PROJECTS[1].bench` is the benchmark's headline graph, drawn inline beside
+  the text by `src/ui/BenchFigure.jsx` (below it under 1180px). The seconds in
+  `data.js` are computed from the `results/*.csv` committed in the benchmark
+  repo, the same way its own report totals them. Recompute them if the
+  benchmark is re-run.
+- `PROJECTS[2].embed` frames the project's own published dbt docs, deep-linked
+  straight onto the lineage graph. Cross-origin embeds are marked `external`:
+  they get a fixed height, a click-to-activate shield so the page can still be
+  scrolled past them, and a hand-off link instead of the frame below 1100px.
+
+## Fonts
+
+Space Grotesk and DM Mono are served from this origin, not from Google Fonts.
+`src/fonts.css` declares them from the Fontsource packages in `package.json`,
+and Vite copies the files it references into `docs/assets/`. The prerender adds
+a preload for the one the hero is set in. The dashboard embed does the same
+with its own two faces, whose files sit in `public/fonts/`.
 
 The CV linked from the contact section is `public/Aleksa_Milic_CV.pdf`. Vite
 copies `public/` into `docs/` verbatim, so replacing that file and rebuilding is
@@ -62,7 +79,8 @@ all it takes to publish a new one.
 [GoatCounter](https://aleksa-milic.goatcounter.com) counts page views. It
 sets no cookies, so the site needs no consent banner. The tag lives in
 `index.html`. Clicks a page view can't see (the CV download, email, GitHub and
-LinkedIn) go through `track()` in `src/ui/HUD.jsx` and show up as events.
+LinkedIn, each project's repo, report or docs link, and each certificate) go
+through `track()` in `src/ui/HUD.jsx` and show up as events.
 count.js ignores localhost, so local dev and the prerender never count. To stop
 counting your own visits, open `https://aleksa-milic.com/#toggle-goatcounter`
 once in each browser you use.
@@ -81,3 +99,33 @@ the aspect decides how much of the corridor fits sideways. The landscape
 keyframes hold every machine fully in frame down to 1/1 and crop hard below it;
 the portrait path frames all five at any aspect. `App.jsx` switches on
 `(max-aspect-ratio: 1/1)`.
+
+Between keyframes the camera follows a curve through the via points in
+`CAMERA_VIAS` / `CAMERA_VIAS_PORTRAIT`, which take it round the machines rather
+than through them. If you move a keyframe or a machine, check that route again.
+
+### Keeping it fast
+
+- **Static batching.** `StaticBatch` (`src/scene/batch.jsx`) merges every part
+  of a machine, and of the corridor, that never moves into one mesh per
+  material, once at load. That took the scene from 200–260 draw calls a frame
+  to 80–100, which is most of what a phone's CPU was spending. A part that an
+  animation drives must carry `userData={LIVE}`, or it gets merged and frozen
+  in place. Every element in `stations.jsx` that holds a ref for an animation
+  has it. Add it to any new one.
+- **No re-renders while scrolling.** The machines are built once
+  (`MACHINE_ELEMENTS`), and only the 2D backdrop reads the current section.
+  Either one re-rendering in step with the scroll used to cost a long frame on
+  phones.
+- **60fps cap.** `FrameDriver` in `Scene.jsx` asks for at most 60 frames a
+  second, so 90 and 120Hz phones don't draw the backdrop twice as often for no
+  visible gain. It also pauses everything while the tab is hidden.
+- **Degrading gracefully.** If a device can't keep up, `PerformanceMonitor`
+  lowers the render resolution in steps down to 0.7, and only drops the glow
+  passes after that.
+
+The belt and every machine animate on one shared clock, `src/scene/flow.jsx`,
+rather than the render clock. Scrolling speeds it up, so the whole line works
+harder while the visitor scrolls and eases back when they stop. Packets ride
+the belt in batches: raw amber shards go into the processing drum and come out
+as blue blocks, which turn green once they pass the control room.

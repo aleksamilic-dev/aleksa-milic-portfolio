@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import './fonts.css';
 import './styles.css';
 
 // `npm run build` prerenders the HUD into docs/index.html (scripts/prerender.mjs)

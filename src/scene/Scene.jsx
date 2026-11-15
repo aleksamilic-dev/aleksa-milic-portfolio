@@ -12,6 +12,8 @@ import { easing } from 'maath';
 import {
   CAMERA_KEYFRAMES,
   CAMERA_KEYFRAMES_PORTRAIT,
+  CAMERA_VIAS,
+  CAMERA_VIAS_PORTRAIT,
   CAMERA_WIDE,
   CAMERA_WIDE_PORTRAIT,
   MACHINES,
@@ -24,6 +26,8 @@ import { usePointer } from '../hooks.js';
 import { StudioEnv } from './env.jsx';
 import { Beam, Strut } from './primitives.jsx';
 import { Spine, SpineFlow } from './DataFlow.jsx';
+import { FlowClock } from './flow.jsx';
+import { StaticBatch } from './batch.jsx';
 import { Stations } from './stations.jsx';
 
 const FACILITY_LENGTH = SPINE.startZ - SPINE.endZ + 12;
@@ -36,14 +40,51 @@ const smooth = (x) => {
 };
 const mix = (a, b, t) => a + (b - a) * t;
 
+// The camera's route: a smooth curve through every keyframe and, between
+// them, the via points that take it round the machines (see CAMERA_VIAS in
+// data.js). `at(i, f, out)` writes the point `f` (0..1) of the way from
+// keyframe i to keyframe i+1 into `out`, measured by distance along the
+// route, so the vias don't make the camera speed up and slow down.
+function useRoute(keyframes, vias) {
+  return useMemo(() => {
+    const points = [];
+    const beat = []; // index of each keyframe in `points`
+    keyframes.forEach((k, i) => {
+      beat.push(points.length);
+      points.push(new THREE.Vector3(...k.pos));
+      (vias[i] || []).forEach((v) => points.push(new THREE.Vector3(...v)));
+    });
+    const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+    const last = points.length - 1;
+    // chord lengths of the pieces between each pair of keyframes
+    const pieces = beat.slice(0, -1).map((a, i) => {
+      const lengths = [];
+      for (let p = a; p < beat[i + 1]; p++) lengths.push(points[p].distanceTo(points[p + 1]));
+      return { a, lengths, total: lengths.reduce((x, y) => x + y, 0) };
+    });
+    return {
+      at(i, f, out) {
+        const { a, lengths, total } = pieces[i];
+        let s = f * total;
+        let p = 0;
+        while (p < lengths.length - 1 && s > lengths[p]) s -= lengths[p++];
+        const index = a + p + Math.min(1, s / (lengths[p] || 1));
+        return curve.getPoint(index / last, out);
+      },
+    };
+  }, [keyframes, vias]);
+}
+
 // --- camera: push-in on load, then a slow glide down the corridor --------
 // On mount the camera eases `wide` -> keyframe 0 (~2.4s). After that it tracks
 // `progress` along `keyframes`, heavily damped, so each machine drifts past as
 // you scroll. Languid, dim, not a tour. Portrait phones pass the centreline
 // path (see data.js) instead of the landscape one.
-function CameraRig({ pointer, keyframes, wide }) {
+function CameraRig({ pointer, keyframes, vias, wide }) {
   const look = useRef(new THREE.Vector3(...wide.look));
   const intro = useRef(0);
+  const route = useRoute(keyframes, vias);
+  const onRoute = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, dt) => {
     intro.current = Math.min(1, intro.current + dt / 2.4);
@@ -59,15 +100,19 @@ function CameraRig({ pointer, keyframes, wide }) {
     const py = ptr.y;
     const t = state.clock.elapsedTime;
 
-    // interpolate the keyframe path by scroll progress
+    // where on the route scroll progress puts the camera. The ease within
+    // each stretch makes it settle at every keyframe.
     const seg = progress * (keyframes.length - 1);
     const i = Math.min(Math.floor(seg), keyframes.length - 2);
     const f = smooth(seg - i);
     const a = keyframes[i];
     const b = keyframes[i + 1];
+    const at = route.at(i, f, onRoute).toArray();
 
-    // blend the intro (wide -> keyframe 0) into the travel target
-    const tp = (k) => mix(wide.pos[k], mix(a.pos[k], b.pos[k], f), fi);
+    // blend the intro (wide -> keyframe 0) into the travel target. The look
+    // target runs straight from one keyframe's to the next: it never needs
+    // to go round anything.
+    const tp = (k) => mix(wide.pos[k], at[k], fi);
     const tl = (k) => mix(wide.look[k], mix(a.look[k], b.look[k], f), fi);
 
     easing.damp3(
@@ -237,29 +282,59 @@ function Effects({ full }) {
   );
 }
 
-// Freeze the render loop (and the clock, so animations resume where they left
-// off instead of lurching) while the tab is in the background.
-function PauseWhenHidden({ setFrameloop }) {
+// The render loop. The canvas runs on demand and this asks it for a frame at
+// most 60 times a second. On a 60Hz screen that's every frame, as before. On
+// the 90 and 120Hz screens most phones have now, the browser runs its frame
+// callbacks 90 or 120 times a second, and the scene was drawing every one:
+// up to twice the GPU work and heat for a slow ambient backdrop that looks
+// no different at 60. The page itself still scrolls at the screen's full rate.
+//
+// It also freezes the loop, and the clock, while the tab is in the
+// background, so animations pick up where they left off instead of lurching.
+const FRAME_MS = 1000 / 60;
+
+function FrameDriver() {
+  const invalidate = useThree((s) => s.invalidate);
   const clock = useThree((s) => s.clock);
   useEffect(() => {
+    let raf = 0;
+    let next = 0;
+    const loop = (t) => {
+      raf = requestAnimationFrame(loop);
+      // 1.5ms of slack, so a 60Hz screen's jitter never skips a frame
+      if (t < next - 1.5) return;
+      // on time: the next slot is one frame on. Fallen behind (a stall, a
+      // return from the background): start counting again from now.
+      next = t - next > FRAME_MS ? t + FRAME_MS : next + FRAME_MS;
+      invalidate();
+    };
     const onVis = () => {
+      cancelAnimationFrame(raf);
       if (document.hidden) {
         clock.stop(); // holds elapsedTime where it is
-        setFrameloop('never');
       } else {
         // resume without THREE.Clock.start() — that would zero elapsedTime and
         // snap every time-based animation back to its start. Just clear the
         // stale delta so the first frame back isn't a giant time step.
         clock.running = true;
-        clock.oldTime = (typeof performance !== 'undefined' ? performance : Date).now();
-        setFrameloop('always');
+        clock.oldTime = performance.now();
+        next = 0;
+        raf = requestAnimationFrame(loop);
       }
     };
+    if (!document.hidden) raf = requestAnimationFrame(loop);
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [clock, setFrameloop]);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [invalidate, clock]);
   return null;
 }
+
+// How far PerformanceMonitor may take the resolution down before it gives up
+// the glow passes instead.
+const DPR_FLOOR = 0.7;
 
 export default function Scene({ tier, portrait = false }) {
   const pointer = usePointer();
@@ -269,18 +344,17 @@ export default function Scene({ tier, portrait = false }) {
   // renders at CSS resolution (dpr 1) even on HiDPI. PerformanceMonitor can
   // still walk it down further on weak GPUs.
   const [dpr, setDpr] = useState(1);
+  const dprNow = useRef(1);
   const [fx, setFx] = useState(true);
-  const [frameloop, setFrameloop] = useState(() =>
-    typeof document !== 'undefined' && document.hidden ? 'never' : 'always',
-  );
 
   const wide = portrait ? CAMERA_WIDE_PORTRAIT : CAMERA_WIDE;
   const keyframes = portrait ? CAMERA_KEYFRAMES_PORTRAIT : CAMERA_KEYFRAMES;
+  const vias = portrait ? CAMERA_VIAS_PORTRAIT : CAMERA_VIAS;
 
   return (
     <Canvas
       dpr={dpr}
-      frameloop={frameloop}
+      frameloop="demand"
       gl={{
         antialias: false,
         powerPreference: 'high-performance',
@@ -296,15 +370,22 @@ export default function Scene({ tier, portrait = false }) {
         far: portrait ? 90 : 130,
       }}
     >
-      <PauseWhenHidden setFrameloop={setFrameloop} />
+      {/* first, so the factory clock has advanced before anything reads it */}
+      <FlowClock />
+      <FrameDriver />
+      {/* If a device can't hold its frame rate, give up resolution first, in
+          small steps: the canvas sits behind scrims, vignette and grain, so a
+          softer image barely shows. The glow is what makes the machines read,
+          so it only goes once the resolution is at its floor and the frame
+          rate still isn't there. (It used to go on the first slow patch.) */}
       <PerformanceMonitor
         onDecline={() => {
-          setDpr((d) => Math.max(0.75, d - 0.35));
-          setFx(false);
-        }}
-        onFallback={() => {
-          setDpr(0.75);
-          setFx(false);
+          if (dprNow.current > DPR_FLOOR) {
+            dprNow.current = Math.max(DPR_FLOOR, +(dprNow.current - 0.15).toFixed(2));
+            setDpr(dprNow.current);
+          } else {
+            setFx(false);
+          }
         }}
       />
 
@@ -325,7 +406,11 @@ export default function Scene({ tier, portrait = false }) {
 
       <StudioEnv />
 
-      <Facility />
+      {/* the corridor never moves: trusses, struts, rails and the spine's
+          legs merge into a handful of draw calls (see scene/batch.jsx) */}
+      <StaticBatch>
+        <Facility />
+      </StaticBatch>
       <Stations />
       <SpineFlow tier={tier} />
 
@@ -341,7 +426,7 @@ export default function Scene({ tier, portrait = false }) {
         />
       )}
 
-      <CameraRig pointer={pointer} keyframes={keyframes} wide={wide} />
+      <CameraRig pointer={pointer} keyframes={keyframes} vias={vias} wide={wide} />
       {fx && <Effects full={tier === 'full'} />}
 
       {/* compile every machine's shaders/geometry during the initial load so

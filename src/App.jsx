@@ -28,7 +28,10 @@ export default function App() {
   // data.js. (Was `max-width: 720px`, which is right on a phone but hands a
   // 768x1024 tablet the landscape path at aspect 0.75.)
   const portrait = useMediaQuery('(max-aspect-ratio: 1/1)');
-  const section = useFactory((s) => s.section);
+  // Not `section`: only the 2D backdrop needs that, and it reads it itself.
+  // Subscribing here re-rendered the whole page and the whole 3D scene every
+  // time the visitor scrolled into a new section, which on a phone was a
+  // long frame each time.
   const calm = useFactory((s) => s.calm);
 
   if (INSPECT !== null) {
@@ -67,7 +70,7 @@ export default function App() {
     >
       <div className="canvas-wrap">
         {showFallback ? (
-          <Fallback section={section} />
+          <Fallback />
         ) : (
           <Suspense fallback={null}>
             <Scene tier={tier} portrait={portrait} />

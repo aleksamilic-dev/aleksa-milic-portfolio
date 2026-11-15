@@ -7,11 +7,31 @@
 <!-- Framed by the portfolio; on its own it is an orphan page competing with the homepage.
      indexifembedded still lets Google count its content toward the homepage that frames it. -->
 <meta name="robots" content="noindex, indexifembedded">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <style>
+  /* Inter and IBM Plex Mono, served from this origin (public/fonts/) rather
+     than from Google Fonts, like the page that frames this one. The files are
+     the Fontsource 5.3.0 builds. Inter is one variable file per subset, and
+     Latin Extended is there for the š and ž in the territory names. */
+  @font-face {
+    font-family: "Inter"; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url("fonts/inter-latin-ext-wght-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+  @font-face {
+    font-family: "Inter"; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url("fonts/inter-latin-wght-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-display: swap; font-weight: 400;
+    src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-display: swap; font-weight: 500;
+    src: url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  }
+
   /* Dark-committed palette — this page replicates a specific dark BI dashboard
      (Apache Superset), so it deliberately renders one visual world. Every color
      is painted explicitly so the page holds on any host ground. The one thing
@@ -214,6 +234,18 @@
   @media (max-width: 900px) {
     .span-4, .span-6, .span-8 { grid-column: span 12; }
   }
+  /* A phone. All five columns need about 620px, and the sideways scroll that
+     gave them cut the first number off mid-digit, so 2,573 read as 2,57. The
+     territory and the two dwelling counts fit, and they are the columns the
+     panels above are about. */
+  @media (max-width: 520px) {
+    .panel { padding: 14px 14px 16px; }
+    thead th, tbody td { padding-left: 8px; padding-right: 8px; }
+    thead th { white-space: normal; }
+    thead th button { text-align: inherit; }
+    tbody td:first-child { white-space: normal; }
+    #coverage th:nth-child(n+4), #coverage td:nth-child(n+4) { display: none; }
+  }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -251,6 +283,25 @@
   "use strict";
   try { window.trustedTypes && window.trustedTypes.createPolicy("default", { createHTML: s => s }); } catch (e) { /* allowlisted elsewhere */ }
   const DATA = JSON.parse(document.getElementById("viz-data").textContent);
+
+  // Territory names arrive in Serbian Cyrillic, the way the Statistical Office
+  // publishes them. Serbian also has an official Latin alphabet that maps onto
+  // it letter for letter, so the page shows that instead: the names stay exact
+  // and a reader who doesn't know Cyrillic can still tell the rows apart.
+  const SR_LATIN = (function () {
+    const upper = {
+      "А": "A", "Б": "B", "В": "V", "Г": "G", "Д": "D", "Ђ": "Đ", "Е": "E", "Ж": "Ž", "З": "Z", "И": "I",
+      "Ј": "J", "К": "K", "Л": "L", "Љ": "Lj", "М": "M", "Н": "N", "Њ": "Nj", "О": "O", "П": "P", "Р": "R",
+      "С": "S", "Т": "T", "Ћ": "Ć", "У": "U", "Ф": "F", "Х": "H", "Ц": "C", "Ч": "Č", "Џ": "Dž", "Ш": "Š"
+    };
+    const map = {};
+    for (const k in upper) { map[k] = upper[k]; map[k.toLowerCase()] = upper[k].toLowerCase(); }
+    return map;
+  })();
+  const latin = s => String(s).replace(/[Ѐ-ӿ]/g, c => SR_LATIN[c] || c);
+  DATA.territories.forEach(t => { t.name = latin(t.name); });
+  DATA.coverage.forEach(r => { r.territory = latin(r.territory); });
+
   const NS = "http://www.w3.org/2000/svg";
   const fmt = new Intl.NumberFormat("en-US");
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -333,7 +384,11 @@
       kpiAnimated = true;
       const t0 = performance.now(), dur = 850;
       (function tick(now) {
-        const p = Math.min(1, (now - t0) / dur);
+        // Clamped at both ends. A frame's timestamp is when the frame began,
+        // which on a busy main thread can be earlier than the t0 read above.
+        // Unclamped, that negative progress goes through the cubic and the
+        // count opens on a large negative number.
+        const p = Math.max(0, Math.min(1, (now - t0) / dur));
         kpiValueEl.textContent = fmt.format(Math.round(target * (1 - Math.pow(1 - p, 3))));
         if (p < 1) requestAnimationFrame(tick);
       })(t0);
@@ -398,7 +453,13 @@
   /* ---------- generic line chart ---------- */
   function lineChart(mountId, opts) {
     const mount = document.getElementById(mountId);
-    const W = 640, H = opts.height || 240;
+    // The drawing is 640 units wide and scales with its panel, which is right
+    // on a desktop and wrong on a phone: at 290px the 10px axis labels land at
+    // 4.5px. Below 640 the drawing takes the panel's own width instead, so a
+    // unit stays a pixel and the labels stay their size. renderPlanned redraws
+    // when that width changes.
+    const W = Math.max(280, Math.min(640, Math.round(mount.clientWidth) || 640));
+    const H = opts.height || 240;
     const m = { t: 12, r: opts.endLabels ? 46 : 14, b: 24, l: 40 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
 
@@ -653,6 +714,25 @@
     renderTable();
   }
   setTerritory(currentCode);
+
+  // The line chart is drawn to its panel's width (see lineChart), so it needs
+  // drawing again when that width changes: a phone turning, or the hosting
+  // page resizing the frame. Only a change in the drawn width counts, which
+  // above 640px is no change at all.
+  if (window.ResizeObserver) {
+    const plannedMount = document.getElementById("c-planned");
+    const drawnWidth = () => Math.max(280, Math.min(640, Math.round(plannedMount.clientWidth) || 640));
+    let drawn = drawnWidth(), queued = false;
+    new ResizeObserver(() => {
+      if (queued || drawnWidth() === drawn) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        drawn = drawnWidth();
+        renderPlanned(byCode[currentCode]);
+      });
+    }).observe(plannedMount);
+  }
 
   /* ---------- report height to a hosting page (optional, harmless standalone) --
      Portfolio listens with:

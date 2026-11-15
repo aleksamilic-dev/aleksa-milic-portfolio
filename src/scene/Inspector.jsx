@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Grid, Lightformer, OrbitControls } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { PALETTE } from '../data.js';
+import { FlowClock } from './flow.jsx';
 import {
   ControlRoom,
   IngestionDock,
@@ -44,6 +45,8 @@ export default function Inspector({ index = 0 }) {
       camera={{ position: [5, 3.4, 7], fov: 42, near: 0.1, far: 100 }}
       gl={{ antialias: false, toneMappingExposure: 1.1 }}
     >
+      {/* the machines animate on the factory clock (scene/flow.jsx) */}
+      <FlowClock />
       <color attach="background" args={['#0b0f15']} />
       <ambientLight intensity={0.4} />
       <hemisphereLight intensity={0.6} color="#3a5064" groundColor="#06090d" />

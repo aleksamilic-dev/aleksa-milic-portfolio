@@ -1,6 +1,5 @@
-/* Fonts are loaded via <link rel="preconnect"> + <link rel="stylesheet"> in
-   index.html so they fetch in parallel with this stylesheet instead of being
-   discovered only after it parses. */
+/* The @font-face rules are in fonts.css, which main.jsx loads ahead of this
+   file. The fonts are served from this origin. */
 
 /* ===========================================================================
    TOKENS
@@ -90,6 +89,19 @@ a {
 :where(a, button, [tabindex]):focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
+}
+
+/* In the page for a screen reader, off it for everyone else. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* The scroll container takes focus on mount only so the keyboard has
@@ -200,12 +212,22 @@ a {
   height: 100svh;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   scroll-behavior: smooth;
 }
 
-.viewport::-webkit-scrollbar {
-  display: none;
+/* The scrollbar is hidden only where the progress rail stands in for it. Under
+   720px the rail is gone (see RESPONSIVE), and without either a phone has no
+   sense of how long the page is or where in it you are. There the browser's
+   own indicator stays: on touch it's an overlay that shows while you scroll
+   and fades after, so it costs no layout. */
+@media (min-width: 721px) {
+  .viewport {
+    scrollbar-width: none;
+  }
+
+  .viewport::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .section {
@@ -1043,6 +1065,180 @@ a {
 }
 
 /* ===========================================================================
+   BENCHMARK FIGURE (see ui/BenchFigure.jsx)
+   =========================================================================== */
+/* The graph in project 2's figure slot. Darker than an image figure, since
+   it's thin lines and small type over a moving scene. */
+.bfig {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: clamp(14px, 2vw, 24px);
+  background: rgba(9, 12, 17, 0.84);
+  /* fills deeper than --blue and --amber: those are tuned as text and thin
+     accents and glare as filled marks. This pair stays apart under the common
+     colour-vision deficiencies. */
+  --mark-blue: #4797cf;
+  --mark-amber: #d47a38;
+}
+
+.bfig > svg {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  align-self: center;
+  overflow: visible;
+}
+
+.bfig text {
+  font-family: var(--font-mono);
+}
+
+/* sizes are in the graph's own units, which a phone shows at about 0.9 of a
+   pixel: 12 here lands near 10.8px there, the page's smallest label size */
+.bfig__title {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--amber);
+}
+
+.bfig__sub,
+.bfig__tick,
+.bfig__x-sub {
+  font-size: 12px;
+  fill: var(--ink-faint);
+}
+
+.bfig__grid {
+  stroke: rgba(150, 182, 205, 0.12);
+  stroke-width: 1;
+}
+
+.bfig__band {
+  stroke-width: 1;
+}
+
+.bfig__line {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.bfig__dot {
+  stroke: #0b0f14;
+  stroke-width: 2;
+}
+
+.bfig__group--spark .bfig__band {
+  fill: rgba(212, 122, 56, 0.16);
+  stroke: rgba(212, 122, 56, 0.42);
+}
+
+.bfig__group--spark .bfig__line,
+.bfig__group--spark .bfig__dot {
+  stroke: var(--mark-amber);
+}
+
+.bfig__group--spark .bfig__dot {
+  fill: var(--mark-amber);
+  stroke: #0b0f14;
+}
+
+.bfig__group--inproc .bfig__band {
+  fill: rgba(71, 151, 207, 0.16);
+  stroke: rgba(71, 151, 207, 0.45);
+}
+
+.bfig__group--inproc .bfig__line {
+  stroke: var(--mark-blue);
+}
+
+.bfig__group--inproc .bfig__dot {
+  fill: var(--mark-blue);
+}
+
+.bfig__label {
+  font-family: var(--font-display) !important;
+  font-size: 12.5px;
+  font-weight: 500;
+  fill: var(--ink);
+}
+
+.bfig__gap path {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 1;
+}
+
+.bfig__gap text {
+  font-size: 15px;
+  font-weight: 500;
+  fill: var(--ink);
+}
+
+.bfig__x text {
+  font-size: 13px;
+  fill: var(--ink-mute);
+}
+
+.bfig__x .bfig__x-sub {
+  font-size: 12px;
+  fill: var(--ink-faint);
+}
+
+.bfig__cap {
+  max-width: 460px;
+  align-self: center;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-mute);
+}
+
+.bfig__cap a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--hair);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.bfig__cap a:hover {
+  color: var(--blue-bright);
+  border-color: var(--blue);
+}
+
+/* The figure slot beside the text is about 300px wide at 1040px of viewport,
+   which would set the graph's labels near 9px. Until the slot is wide enough
+   for them, the graph takes its own row under the text instead, the way every
+   figure does below 1040px. */
+@media (max-width: 1180px) {
+  .project--chart {
+    grid-template-columns: 58px minmax(0, var(--text-col));
+  }
+
+  .project--chart .bfig {
+    grid-column: 2 / -1;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  .project--chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project--chart .bfig {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ===========================================================================
    SKILLS & EXPERIENCE
    =========================================================================== */
 .about {
@@ -1469,11 +1665,11 @@ a.cert:hover .cert__ext {
 /* ===========================================================================
    2D CALM BACKDROP (see ui/Fallback.jsx)
    =========================================================================== */
-/* This is not a rare fallback any more. It's the backdrop for every viewport
-   under 1200px (hooks.js — the 3D corridor crops to black below that) as well
-   as for anyone who reduces motion, so it has to carry the page's identity on
-   its own rather than fade to a flat dark rectangle. Everything here is static:
-   no animation, no canvas, no JS beyond the active-section class. */
+/* The backdrop when WebGL2 isn't available or the device is genuinely weak
+   (hooks.js), and for anyone who turns ambient motion off in the topbar. It
+   has to carry the page's identity on its own rather than fade to a flat dark
+   rectangle. Everything here is static: no animation, no canvas, no JS beyond
+   the active-section class. */
 .flat {
   position: absolute;
   inset: 0;
@@ -1636,9 +1832,13 @@ a.cert:hover .cert__ext {
     width: 190px;
   }
 
+  /* The narrower card can't hold the location and the status side by side at
+     a readable size. They used to shrink to fit (8px here, 7px on a phone),
+     which put "Open to work" below anything a visitor would read. Stacked,
+     both keep the page's smallest label size. */
   .profile__meta {
-    font-size: 8px;
-    letter-spacing: 0.08em;
+    flex-direction: column;
+    gap: 4px;
   }
 }
 
@@ -1658,15 +1858,44 @@ a.cert:hover .cert__ext {
 
   .topbar {
     padding: 0 18px;
+    gap: 12px;
   }
 
-  /* keep the role in the header on phones too (it's nowhere else there) —
-     tightened so it fits the narrow bar */
+  /* The viewport keeps its native scrollbar here (see SCROLL VIEWPORT). Where
+     that's a classic one rather than a touch overlay, keep it thin and dark. */
+  .viewport {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(150, 182, 205, 0.32) transparent;
+  }
+
+  /* The name and the role don't fit on one line beside four icons on a phone:
+     at 375 and 390px each of them broke in two mid-phrase, and holding them on
+     one line meant an 8px role. So the role sits under the name as a two-line
+     lockup, which fits down to 320px with the role at a readable size. It
+     stays in the header because it's nowhere else on a phone. */
+  .brand {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+    row-gap: 3px;
+    justify-items: start;
+  }
+
+  .brand__mark {
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+
+  .brand__name,
   .brand__sub {
-    font-size: 8px;
-    letter-spacing: 0.14em;
-    padding-left: 8px;
+    white-space: nowrap;
+  }
+
+  .brand__sub {
+    letter-spacing: 0.16em;
+    padding-left: 0;
     margin-left: 0;
+    border-left: 0;
   }
 
   .section--work,
@@ -1697,8 +1926,6 @@ a.cert:hover .cert__ext {
   }
 
   .profile__meta {
-    font-size: 7px;
-    letter-spacing: 0.06em;
     padding-top: 8px;
   }
 
@@ -1753,8 +1980,12 @@ a.cert:hover .cert__ext {
     padding: 10px;
   }
 
+  /* minmax(0, …), not a bare 1fr: a bare one can't go narrower than its
+     widest content, so one wide child (a table, a long unbroken name) would
+     push the whole project wider than the phone and the section would clip
+     it. */
   .project {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
 

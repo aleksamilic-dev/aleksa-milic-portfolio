@@ -10,11 +10,24 @@
 // build is left in place and the build still succeeds.
 
 import { preview } from 'vite';
-import { writeFile } from 'node:fs/promises';
+import { readdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const PORT = 4179;
 const ROUTES = [{ path: '/', out: 'docs/index.html' }];
+
+// The font the hero's name and copy are set in. Without a preload the browser
+// only learns it needs the file once the stylesheet has parsed and the text
+// has been laid out, so the hero paints in the fallback face and swaps. Its
+// built name carries a content hash, hence the lookup. An empty string if the
+// build has no such file, which just means no preload.
+async function heroFontPreload() {
+  const files = await readdir(resolve('docs/assets')).catch(() => []);
+  const font = files.find((f) => /^space-grotesk-latin-wght-normal-.+\.woff2$/.test(f));
+  return font
+    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${font}">`
+    : '';
+}
 
 let puppeteer;
 try {
@@ -89,8 +102,14 @@ try {
       return '<!doctype html>\n' + document.documentElement.outerHTML + '\n';
     });
 
-    await writeFile(resolve(out), html, 'utf8');
-    console.log(`[prerender] ${path} -> ${out}  (${(html.length / 1024).toFixed(1)} kB)`);
+    // Ahead of the stylesheet, so the two are fetched side by side.
+    const preload = await heroFontPreload();
+    const withPreload = preload
+      ? html.replace('<link rel="stylesheet"', `${preload}\n    <link rel="stylesheet"`)
+      : html;
+
+    await writeFile(resolve(out), withPreload, 'utf8');
+    console.log(`[prerender] ${path} -> ${out}  (${(withPreload.length / 1024).toFixed(1)} kB)`);
     await page.close();
   }
 } catch (err) {

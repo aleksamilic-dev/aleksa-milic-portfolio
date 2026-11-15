@@ -1,5 +1,3 @@
-import engineBenchmark from './assets/engine-benchmark.svg';
-
 // ---------------------------------------------------------------------------
 // Single source of truth: portfolio content + the ambient scene's layout.
 //
@@ -69,17 +67,27 @@ export const ABOUT =
 // Keep this to your 3 strongest. Each entry: what it was, your role, the
 // stack, and a concrete outcome. Lead with the outcome.
 //
-// `image` is the visual that sits to the right of the text — a dashboard
-// screenshot, architecture diagram, etc. Drop a file in src/assets/, import
+// Each project shows its evidence in its own way, so the three don't read as
+// one template three times:
+//
+// `embed` is a live page in an iframe, spanning the full row under the text.
+// A same-origin one posts its height back (see ProjectEmbed in ui/HUD.jsx).
+// Mark a cross-origin one `external` for a fixed height, a click-to-activate
+// shield, and a hand-off link below 1100px. `linkKind` names its link in
+// analytics: 'repo' (the default) or 'docs'.
+//
+// `bench` is a results graph that sits to the right of the text, in the
+// figure slot (ui/BenchFigure.jsx). It's drawn from the numbers here, so its
+// labels stay readable at any width.
+//
+// `image` is a picture for that same slot. Drop a file in src/assets/, import
 // it at the top of this file, and set `image` to the import.
 //
-// `embed` replaces that slot with a live panel spanning the full row. A
-// same-origin one posts its height back (see ProjectEmbed); mark a
-// cross-origin one `external` for a fixed height, a click-to-activate shield,
-// and a hand-off link below 1100px.
+// `key` names the project in analytics events (see track() in ui/HUD.jsx).
 export const PROJECTS = [
   {
     id: 'project-1',
+    key: 'nis-radar',
     title: 'Niš Urban Development Radar',
     year: '2026',
     context:
@@ -97,9 +105,9 @@ export const PROJECTS = [
     // same repo (as "Pipeline and methodology on GitHub"), and Work() only
     // renders the plain "Source on GitHub" link when `href` is set — so this
     // is the one project of the three that doesn't get that second, redundant
-    // link to the identical URL. Projects 2 and 3 keep `href`: #2 has no
-    // embed to carry it instead, and #3's embed links its published dbt docs,
-    // a different URL from its repo.
+    // link to the identical URL. Projects 2 and 3 keep `href`: their panels
+    // link the published report and the published dbt docs, which are
+    // different URLs from their repos.
     image: null,
     imageAlt: '',
     embed: {
@@ -113,6 +121,7 @@ export const PROJECTS = [
   },
   {
     id: 'project-2',
+    key: 'tpch-benchmark',
     title: 'When do you actually need a cluster?',
     year: '2026',
     context:
@@ -127,11 +136,78 @@ export const PROJECTS = [
       'The in-process engines finish ~10x faster than Spark at SF1 and SF10, and ' +
       'the gap holds as data grows. Every run gated on 96 correctness checks.',
     href: 'https://github.com/aleksamilic-dev/tpch-engine-benchmark',
-    image: engineBenchmark,
-    imageAlt: 'TPC-H workload time, log scale: in-process engines versus Spark, SF1 to SF10',
+    image: null,
+    imageAlt: '',
+    bench: {
+      title: 'Total time · 8 TPC-H queries',
+      unit: 'seconds · log scale',
+      // The two kinds of engine. Each is drawn as a band from its fastest
+      // setup to its slowest, with a line through `line`.
+      groups: [
+        {
+          id: 'inproc',
+          label: 'DuckDB · Polars · DataFusion',
+          line: 'duckdb',
+          lineName: 'DuckDB',
+        },
+        {
+          id: 'spark',
+          label: 'Apache Spark',
+          line: 'spark',
+          lineName: 'Spark, default setup',
+        },
+      ],
+      engines: [
+        { id: 'duckdb', name: 'DuckDB', group: 'inproc' },
+        { id: 'datafusion', name: 'DataFusion', group: 'inproc' },
+        { id: 'polars', name: 'Polars', group: 'inproc' },
+        { id: 'spark', name: 'Spark', group: 'spark' },
+        { id: 'spark-tuned', name: 'Spark tuned', group: 'spark' },
+        { id: 'spark-cluster', name: 'Spark cluster', group: 'spark' },
+      ],
+      // Seconds for the whole workload: the sum over the 8 queries of each
+      // one's warm-run median, which is how the project's own report totals
+      // them (report/build_report.py). These come straight from the
+      // results/*.csv committed in that repo. If the benchmark is re-run,
+      // recompute them the same way rather than editing a number by hand.
+      scales: [
+        {
+          id: 'sf1',
+          label: 'SF1',
+          size: 'about 1 GB',
+          seconds: {
+            duckdb: 0.584,
+            datafusion: 0.754,
+            polars: 0.861,
+            spark: 10.459,
+            'spark-tuned': 9.769,
+            'spark-cluster': 15.958,
+          },
+        },
+        {
+          id: 'sf10',
+          label: 'SF10',
+          size: 'about 10 GB',
+          seconds: {
+            duckdb: 8.046,
+            datafusion: 9.819,
+            polars: 15.33,
+            spark: 79.565,
+            'spark-tuned': 88.155,
+            'spark-cluster': 125.493,
+          },
+        },
+      ],
+      caption:
+        'Lines are DuckDB and Spark’s default setup. Bands span every engine of ' +
+        'each kind, a 2-worker Spark cluster included. Warm runs on one 8-vCPU laptop.',
+      report: 'https://aleksamilic-dev.github.io/tpch-engine-benchmark/',
+      reportLabel: 'Full report with per-query timings',
+    },
   },
   {
     id: 'project-3',
+    key: 'harvest-warehouse',
     title: 'Harvest Yield Warehouse',
     year: '2026',
     context:
@@ -169,6 +245,7 @@ export const PROJECTS = [
       activate: 'Click to explore the graph',
       repo: 'https://aleksamilic-dev.github.io/harvest-yield-warehouse/',
       repoLabel: 'Open the full dbt docs',
+      linkKind: 'docs',
       narrowLabel: 'Open the interactive lineage graph',
       // Rendered as native markup above the frame rather than inside it, so it
       // prerenders, stays on-brand, and costs nothing to load.
@@ -378,6 +455,32 @@ export const CAMERA_KEYFRAMES = [
 // `max-width: 720px`, which is the same thing on a phone but leaves the band
 // above it wrong: a 768x1024 tablet is over 720px wide and gets the landscape
 // path at aspect 0.75, which cuts 33-44% off three of the five machines.
+// Via points: where the camera goes between keyframes so it passes the
+// machines instead of through them. `{ i: [...] }` lists the points between
+// keyframe i and keyframe i+1, in order. The route is a smooth curve through
+// keyframes and vias alike (CameraRig in scene/Scene.jsx), so adding one
+// changes nothing at a keyframe, only the way there.
+//
+// The straight lines these replace went through the storage rack and the
+// control room's back wall, and passed within 0.1 of the drum: the keyframe
+// on the far side of each is tucked in behind it. Each via takes the camera
+// round the machine's outer end, then across behind it, where it's out of
+// view. Checked by projecting every part of every machine through the
+// camera along the whole route, at aspects 1.0 to 2.4: nothing in view comes
+// closer than 1.6 units.
+export const CAMERA_VIAS = {
+  0: [[-3.0, 2.85, 0.6]], // wide of the silo
+  1: [[-3.9, 2.4, -16]], // left of the drum's intake end
+  2: [
+    [-4.6, 2.35, -30.2], // left of the storage rack
+    [-4.4, 2.25, -33.9], // then across behind it
+  ],
+  3: [
+    [-5.3, 2.25, -45.3], // past the control room's left end
+    [-5.1, 2.15, -49.7], // then across behind its back wall
+  ],
+};
+
 export const CAMERA_WIDE_PORTRAIT = { pos: [2.4, 4.4, 17], look: [-1.6, 1.3, -6] };
 export const CAMERA_KEYFRAMES_PORTRAIT = [
   { pos: [1.2, 3.1, 11], look: [-1.7, 0.9, -4] }, //  ingestion  (z 0 — arrival: silo sits right-of-centre, low, so the title clears it)
@@ -386,3 +489,13 @@ export const CAMERA_KEYFRAMES_PORTRAIT = [
   { pos: [2.1, 3.6, -34], look: [0, 1.7, -51] }, //   control    (z -48)
   { pos: [2.1, 3.5, -50], look: [0, 1.5, -67] }, //   shipping   (z -64)
 ];
+
+// Same idea as CAMERA_VIAS. The centreline path clears everything but the
+// control room, whose back wall it skimmed the top of (0.19 units).
+// Round its right end instead: 1.5 units clear at aspects 0.46 to 1.0.
+export const CAMERA_VIAS_PORTRAIT = {
+  3: [
+    [5.2, 3.55, -45.6],
+    [5.0, 3.5, -49.7],
+  ],
+};

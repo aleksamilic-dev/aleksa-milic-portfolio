@@ -15,6 +15,7 @@ import {
 } from '../data.js';
 import { ArrowDown, ArrowUpRight, Download, ExternalLink, Pause, Play, SOCIAL_ICONS } from './icons.js';
 import { ISSUER_MARK } from './brands.jsx';
+import BenchFigure from './BenchFigure.jsx';
 
 function jumpTo(id) {
   const target = document.getElementById(`sec-${id}`);
@@ -28,11 +29,19 @@ function jumpTo(id) {
 
 // Records a click as an event in GoatCounter, the cookie-free analytics that
 // index.html loads. Page views count themselves. These are the visits that go
-// somewhere a page view can't see: the CV, an email, a profile. Does nothing
-// until count.js has loaded, or at all if a blocker stopped it.
+// somewhere a page view can't see: the CV, an email, a profile, and which
+// project's repo, report or docs a visitor opened, or which certificate. Does
+// nothing until count.js has loaded, or at all if a blocker stopped it.
 function track(path, title) {
   window.goatcounter?.count?.({ path, title, event: true });
 }
+
+// An event path from a display name: "Fabric Data Engineer" -> "fabric-data-engineer".
+const slug = (s) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 // ---------------------------------------------------------------------------
 // Chrome
@@ -242,7 +251,7 @@ function EmbedStats({ stats }) {
 // handshake, and a shield the visitor has to click before the frame takes
 // pointer events — without it a scroll down the page is swallowed by the
 // embedded graph's own zoom. Any later page scroll re-arms the shield.
-function ProjectEmbed({ embed }) {
+function ProjectEmbed({ embed, onLink, onActivate }) {
   const [height, setHeight] = useState(embed.minHeight || 780);
   const [live, setLive] = useState(false);
   const source = embed.source;
@@ -308,13 +317,25 @@ function ProjectEmbed({ embed }) {
             }}
           />
           {embed.external && !live ? (
-            <button className="embed__shield" onClick={() => setLive(true)}>
+            <button
+              className="embed__shield"
+              onClick={() => {
+                setLive(true);
+                onActivate?.();
+              }}
+            >
               <span>{embed.activate || 'Click to interact'}</span>
             </button>
           ) : null}
         </div>
       ) : (
-        <a className="embed__handoff" href={embed.repo} target="_blank" rel="noreferrer">
+        <a
+          className="embed__handoff"
+          href={embed.repo}
+          target="_blank"
+          rel="noreferrer"
+          onClick={onLink}
+        >
           <span>{embed.narrowLabel || embed.repoLabel}</span>
           <ExternalLink size={14} />
         </a>
@@ -322,7 +343,7 @@ function ProjectEmbed({ embed }) {
 
       {showFrame ? (
         <p className="project__embed-note">
-          <a href={embed.repo} target="_blank" rel="noreferrer">
+          <a href={embed.repo} target="_blank" rel="noreferrer" onClick={onLink}>
             {embed.repoLabel || 'Source on GitHub'} <ExternalLink size={12} />
           </a>
         </p>
@@ -341,7 +362,7 @@ function Work() {
 
       <ol className="work__list">
         {PROJECTS.map((p, i) => (
-          <li key={p.id} className={p.embed ? 'project project--embed' : 'project'} data-reveal>
+          <li key={p.id} className={p.bench ? 'project project--chart' : 'project'} data-reveal>
             <div className="project__aside">
               <span className="project__index">{String(i + 1).padStart(2, '0')}</span>
               <span className="project__year">{p.year}</span>
@@ -365,7 +386,13 @@ function Work() {
                 ))}
               </ul>
               {p.href && (
-                <a className="project__link" href={p.href} target="_blank" rel="noreferrer">
+                <a
+                  className="project__link"
+                  href={p.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => track(`project-${p.key}-repo`, p.title)}
+                >
                   Source on GitHub <ExternalLink size={13} />
                 </a>
               )}
@@ -375,7 +402,19 @@ function Work() {
                 <img src={p.image} alt={p.imageAlt || `${p.title} screenshot`} loading="lazy" />
               </figure>
             ) : null}
-            {p.embed && <ProjectEmbed embed={p.embed} />}
+            {p.bench && (
+              <BenchFigure
+                bench={p.bench}
+                onReport={() => track(`project-${p.key}-report`, p.title)}
+              />
+            )}
+            {p.embed && (
+              <ProjectEmbed
+                embed={p.embed}
+                onLink={() => track(`project-${p.key}-${p.embed.linkKind || 'repo'}`, p.title)}
+                onActivate={() => track(`project-${p.key}-embed-open`, p.title)}
+              />
+            )}
           </li>
         ))}
       </ol>
@@ -450,7 +489,15 @@ function SkillsExperience() {
                   <Card
                     className="cert"
                     {...(c.href
-                      ? { href: c.href, target: '_blank', rel: 'noreferrer' }
+                      ? {
+                          href: c.href,
+                          target: '_blank',
+                          rel: 'noreferrer',
+                          // "Microsoft Certified: " is on most of them and
+                          // says nothing in an event list
+                          onClick: () =>
+                            track(`cert-${slug(c.name.replace(/^.*?:\s*/, ''))}`, c.name),
+                        }
                       : {})}
                   >
                     <span className="cert__mark" aria-hidden>
