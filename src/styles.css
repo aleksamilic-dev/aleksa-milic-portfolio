@@ -1333,6 +1333,34 @@ a {
   color: var(--ink-mute);
 }
 
+/* a small captioned snapshot under an experience or education entry, framed
+   like the hero portrait so the two read as the same kind of object */
+.snap {
+  margin: 16px 0 0;
+  width: min(100%, 360px);
+  padding: 8px 8px 0;
+  border: 1px solid var(--panel-line);
+  background: var(--panel-bg);
+  backdrop-filter: blur(8px);
+}
+
+.snap__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid rgba(77, 159, 214, 0.35);
+  filter: saturate(0.95) contrast(1.02);
+}
+
+.snap__cap {
+  padding: 8px 2px 9px;
+  font-family: var(--font-mono);
+  font-size: var(--micro-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
 /* --- education + certifications ------------------------------------- */
 .ledger {
   margin-top: 10vh;

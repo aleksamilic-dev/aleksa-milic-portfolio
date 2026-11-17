@@ -422,6 +422,25 @@ function Work() {
   );
 }
 
+// A small captioned snapshot under an experience or education entry. The width
+// and height are the file's real ones so the page doesn't shift as it loads.
+function SnapPhoto({ photo }) {
+  return (
+    <figure className="snap">
+      <img
+        className="snap__img"
+        src={photo.src}
+        width={photo.width}
+        height={photo.height}
+        alt={photo.alt}
+        loading="lazy"
+        decoding="async"
+      />
+      <figcaption className="snap__cap">{photo.caption}</figcaption>
+    </figure>
+  );
+}
+
 function SkillsExperience() {
   return (
     <section id="sec-skills" className="section section--skills">
@@ -459,6 +478,7 @@ function SkillsExperience() {
                   <li key={j}>{pt}</li>
                 ))}
               </ul>
+              {e.photo ? <SnapPhoto photo={e.photo} /> : null}
             </div>
           </li>
         ))}

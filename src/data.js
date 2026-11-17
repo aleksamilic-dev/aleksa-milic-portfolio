@@ -278,6 +278,15 @@ export const EXPERIENCE = [
       'Cut average runtime on critical Spark jobs by 40% through partition tuning, caching, and cluster right-sizing.',
       'Own data governance across Databricks and Delta Lake: quality checks, access control, and lineage for production datasets.',
     ],
+    // `photo` is an optional snapshot under the text (ui/HUD.jsx SnapPhoto).
+    // Files sit in public/ under descriptive names, like the hero photo.
+    photo: {
+      src: '/aleksa-milic-asml.webp',
+      width: 960,
+      height: 499,
+      alt: 'Aleksa Milic smiling outside the ASML building.',
+      caption: 'Outside ASML',
+    },
   },
   {
     role: 'Data Engineer',
