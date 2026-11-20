@@ -16,17 +16,25 @@ import { resolve } from 'node:path';
 const PORT = 4179;
 const ROUTES = [{ path: '/', out: 'docs/index.html' }];
 
-// The font the hero's name and copy are set in. Without a preload the browser
-// only learns it needs the file once the stylesheet has parsed and the text
-// has been laid out, so the hero paints in the fallback face and swaps. Its
-// built name carries a content hash, hence the lookup. An empty string if the
-// build has no such file, which just means no preload.
-async function heroFontPreload() {
+// The fonts the first screen is set in: the hero's name and copy, and the
+// mono labels around it (the topbar, the kicker, the buttons, the photo
+// card), all regular weight. Without a preload the browser only learns it
+// needs a file once the stylesheet has parsed and the text has been laid out,
+// so the text paints in the fallback face and swaps. On a slow phone the mono
+// labels swapped a second after the page appeared. Built names carry a
+// content hash, hence the lookup. A font the build doesn't have just gets no
+// preload.
+const FIRST_SCREEN_FONTS = [
+  /^space-grotesk-latin-wght-normal-.+\.woff2$/,
+  /^dm-mono-latin-400-normal-.+\.woff2$/,
+];
+
+async function firstScreenFontPreloads() {
   const files = await readdir(resolve('docs/assets')).catch(() => []);
-  const font = files.find((f) => /^space-grotesk-latin-wght-normal-.+\.woff2$/.test(f));
-  return font
-    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${font}">`
-    : '';
+  return FIRST_SCREEN_FONTS.map((pattern) => files.find((f) => pattern.test(f)))
+    .filter(Boolean)
+    .map((font) => `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${font}">`)
+    .join('\n    ');
 }
 
 let puppeteer;
@@ -66,9 +74,11 @@ try {
     );
 
     const html = await page.evaluate(() => {
-      // Strip the live 3D so the static file is just the readable HUD.
+      // Strip the live 3D so the static file is just the readable HUD, along
+      // with the mark that fades it in once drawn (FadeIn in scene/Scene.jsx).
       document.querySelector('.app')?.setAttribute('data-tier', 'full');
       document.querySelector('.canvas-wrap')?.replaceChildren();
+      document.querySelector('.canvas-wrap')?.removeAttribute('data-shown');
       // Drop the motion attribute: baking this browser's answer in would tell
       // a reduce-motion visitor reading the static HTML (JS off, or before the
       // mount) that motion is fine. Absent, styles.css falls back to the OS
@@ -102,8 +112,8 @@ try {
       return '<!doctype html>\n' + document.documentElement.outerHTML + '\n';
     });
 
-    // Ahead of the stylesheet, so the two are fetched side by side.
-    const preload = await heroFontPreload();
+    // Ahead of the stylesheet, so they're all fetched side by side.
+    const preload = await firstScreenFontPreloads();
     const withPreload = preload
       ? html.replace('<link rel="stylesheet"', `${preload}\n    <link rel="stylesheet"`)
       : html;

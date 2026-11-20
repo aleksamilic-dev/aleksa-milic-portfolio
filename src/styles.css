@@ -5,6 +5,7 @@
    TOKENS
    =========================================================================== */
 :root {
+  color-scheme: dark;
   --void: #080b10;
   --surface: rgba(9, 12, 17, 0.78);
   --panel-bg: rgba(15, 21, 28, 0.74);
@@ -151,10 +152,17 @@ a {
   }
 }
 
+/* The prerendered page (the .app without [data-motion]: the prerender strips
+   it, see scripts/prerender.mjs) shows at full strength on its first frame.
+   Fading in from invisible held back the copy a visitor came for, by more
+   than the fade's own length on a slow phone. The fade above is for React's
+   shell when there's no static page to show first. */
+.app:not([data-motion]) {
+  animation: none;
+}
+
 /* React mounting over the prerendered page (main.jsx). The page is already on
-   screen, so the new shell mustn't fade in again. [data-motion] singles out
-   React's .app: the prerendered one has it stripped (scripts/prerender.mjs),
-   so it still gets its fade on first paint. */
+   screen, so the new shell mustn't fade in again. */
 [data-swap] .app[data-motion] {
   animation: none;
 }
@@ -165,8 +173,24 @@ a {
   z-index: 0;
 }
 
+/* The 3D fades in once its first frame is drawn (FadeIn in scene/Scene.jsx
+   sets [data-shown]) rather than appearing all at once. */
 .canvas-wrap canvas {
   display: block;
+  opacity: 0;
+  transition: opacity 0.9s var(--ease);
+}
+
+.canvas-wrap[data-shown] canvas {
+  opacity: 1;
+}
+
+/* With reduced motion the camera doesn't fly from one machine to the next:
+   the scene fades out, the camera moves, the scene fades back in (CameraRig
+   in scene/Scene.jsx sets [data-veil], and waits for this fade out). */
+.canvas-wrap[data-shown][data-veil] canvas {
+  opacity: 0;
+  transition-duration: 0.35s;
 }
 
 /* light, even wash over the 3D — enough to seat the hero copy; the content
@@ -630,6 +654,7 @@ a {
 /* ===========================================================================
    PROFILE CARD
    =========================================================================== */
+/* the photo's width at each breakpoint is also in PHOTO_SIZES (ui/HUD.jsx) */
 .profile {
   width: 230px;
   padding: 10px;
@@ -1026,6 +1051,12 @@ a {
   width: 100%;
   border: 0;
   transition: height 0.25s var(--ease);
+}
+
+/* the frame's place before its page goes in (useNear in ui/HUD.jsx) */
+.project__embed-hold {
+  display: block;
+  width: 100%;
 }
 
 .project__embed-note {
@@ -1751,21 +1782,47 @@ a.cert:hover .cert__ext {
   background: radial-gradient(circle at 50% 46%, transparent 46%, rgba(8, 11, 16, 0.62));
 }
 
-/* the conveyor: one node per section, the one in view lit */
+/* The conveyor: one node per section, the one in view lit. It runs in the
+   3D belt's stages, each section's stretch in its own colour: raw, refined,
+   checked, and out through the gate. The colours come in from ZONE_COLORS
+   (ui/Fallback.jsx), as r, g, b. These are the same values, as defaults. */
+.flat {
+  --raw: 255, 157, 77;
+  --refined: 77, 159, 214;
+  --checked: 95, 211, 154;
+  --out: 255, 227, 191;
+}
+
 .flat__line {
   position: absolute;
   left: 8%;
   right: 8%;
   top: 56%;
   height: 1px;
+  /* the stages change halfway between nodes, which sit at 0, 1/3, 2/3, 1 */
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(77, 159, 214, 0.75) 12%,
-    rgba(77, 159, 214, 0.75) 88%,
+    rgba(var(--raw), 0.75) 10%,
+    rgba(var(--raw), 0.75) 16.67%,
+    rgba(var(--refined), 0.75) 16.67%,
+    rgba(var(--refined), 0.75) 50%,
+    rgba(var(--checked), 0.75) 50%,
+    rgba(var(--checked), 0.75) 83.33%,
+    rgba(var(--out), 0.75) 83.33%,
+    rgba(var(--out), 0.75) 90%,
     transparent
   );
-  box-shadow: 0 0 22px rgba(77, 159, 214, 0.28);
+}
+
+/* its glow, in its own colours: a blurred copy of the line behind it */
+.flat__line::before {
+  content: '';
+  position: absolute;
+  inset: -5px 0;
+  background: inherit;
+  filter: blur(7px);
+  opacity: 0.6;
 }
 
 .flat__nodes {
@@ -1776,20 +1833,23 @@ a.cert:hover .cert__ext {
   align-items: center;
 }
 
+/* each node in its section's zone colour (--node, set per node in
+   ui/Fallback.jsx), lit when its section is in view */
 .flat__node {
+  --node: 77, 159, 214;
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 1px solid var(--blue);
+  border: 1px solid rgba(var(--node), 0.9);
   background: var(--void);
-  box-shadow: 0 0 10px rgba(77, 159, 214, 0.4);
+  box-shadow: 0 0 10px rgba(var(--node), 0.4);
   transition: background 0.4s, box-shadow 0.4s, border-color 0.4s;
 }
 
 .flat__node.is-active {
-  background: var(--amber);
-  border-color: var(--amber);
-  box-shadow: 0 0 6px var(--amber), 0 0 22px rgba(255, 157, 77, 0.75);
+  background: rgb(var(--node));
+  border-color: rgb(var(--node));
+  box-shadow: 0 0 6px rgb(var(--node)), 0 0 22px rgba(var(--node), 0.75);
 }
 
 /* The scrims above are calibrated against a lit, moving 3D corridor. The flat
@@ -1842,6 +1902,26 @@ a.cert:hover .cert__ext {
 
   .contact {
     max-width: none;
+  }
+}
+
+/* Landscape screens in that band (a small laptop, a tablet held sideways)
+   still get the 3D camera's wide-screen path (see `portrait` in App.jsx),
+   which leaves the shipping gate to the right of the contact copy, and that
+   copy stays in the left half. So contact keeps the wide-screen fade there,
+   and the gate's daylight shows at the end of the page. Held upright, the
+   gate sits behind the copy, so the uniform surface stays. 1001/1000 rather
+   than 1/1: a square screen gets the upright path. */
+@media (min-width: 721px) and (max-width: 1040px) and (min-aspect-ratio: 1001/1000) {
+  .section--contact {
+    background: linear-gradient(
+      90deg,
+      var(--surface) 0,
+      var(--surface) 50%,
+      rgba(9, 12, 17, 0.55) 72%,
+      rgba(9, 12, 17, 0.2) 90%,
+      transparent 100%
+    );
   }
 }
 

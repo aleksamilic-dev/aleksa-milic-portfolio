@@ -44,7 +44,15 @@ export const HERO = {
   // In public/ under a fixed, descriptive name, like the CV. Google Images
   // indexes a photo by its URL, and a hashed asset name would hand it a new
   // one every time the file changed. public/sitemap.xml lists it too.
-  photo: { src: '/aleksa-milic.webp', width: 800, height: 800 },
+  // The 400px copy is for screens that draw the card's photo no wider than
+  // that, phones and desktops at 1x: 10 kB instead of 28. The 800px file
+  // stays the one search engines and the schema name.
+  photo: {
+    src: '/aleksa-milic.webp',
+    srcSet: '/aleksa-milic-400.webp 400w, /aleksa-milic.webp 800w',
+    width: 800,
+    height: 800,
+  },
   value:
     'I build and run data platforms end to end: Spark and Azure Data Factory ' +
     'pipelines, warehouses that stay fast at billions of rows, and the CI/CD ' +
@@ -428,11 +436,45 @@ export const MACHINES = ['01', '02', '03', '04', '05'].map((id, i) => ({
   z: -i * STATION_GAP,
 }));
 
-// Camera path. On load it eases WIDE -> keyframe 0 (the push-in). After that
-// it glides slowly down the corridor as you scroll — one keyframe per beat,
-// interpolated by `progress` and heavily damped, so each machine drifts past
-// behind the copy in turn. Deliberately languid, not a tour.
-export const CAMERA_WIDE = { pos: [-3.6, 4.4, 18.5], look: [-1.3, 0.9, -6] };
+// Which part of the page each machine belongs to, by element id: the camera
+// holds on a machine while its part of the page fills the middle of the
+// screen, and moves on to the next one across the join. Measured from the
+// page itself (beats.js), so it stays right at every width and whatever
+// height the embeds end up.
+//
+//   intake silo      the hero, and the Niš project, which ingests open data
+//   processing drum  the engine benchmark
+//   storage vault    the warehouse
+//   control room     skills and experience: governance, quality checks
+//   shipping gate    contact. Value out.
+export const STOPS = [
+  ['sec-hero', 'project-1'],
+  ['project-2'],
+  ['project-3'],
+  ['sec-skills'],
+  ['sec-contact'],
+];
+
+// Each machine's zone has its own light, following the data down the line:
+// raw amber at the intake, refined blue in processing, gold for the
+// medallion vault, green where the quality checks run, and daylight through
+// the shipping gate. The ceiling strips and the pool on the floor at each
+// machine take its zone's colour, and the haze and sky light shift toward
+// the zone the camera is in (Zones in scene/Scene.jsx).
+// The gold is kept yellow, well clear of the intake's orange.
+export const ZONE_COLORS = [PALETTE.amber, PALETTE.blue, '#f2cc5c', PALETTE.green, '#ffe3bf'];
+
+// What the sign over each zone's doorway says (scene/hall.jsx). The intake
+// is the entrance itself, its sign fixed over the opening.
+export const ZONE_NAMES = ['Ingestion', 'Processing', 'Storage', 'Control', 'Shipping'];
+
+// Camera path. On load it eases WIDE -> keyframe 0 (the push-in), from
+// outside the building in through the entrance (z 14), with the doorway and
+// its sign in view below the topbar as it starts. After that it glides
+// slowly down the corridor as you scroll — one keyframe per beat,
+// interpolated by `beat` (see STOPS) and heavily damped, so each machine
+// drifts past behind the copy in turn. Deliberately languid, not a tour.
+export const CAMERA_WIDE = { pos: [-3.2, 3.6, 22.5], look: [-1.3, 0.9, -6] };
 
 // Keyframe 0 frames the hero (machinery low and right of the copy). From
 // there the camera pans left as it descends, so from the work section on
@@ -443,24 +485,35 @@ export const CAMERA_KEYFRAMES = [
   { pos: [-1.4, 2.4, -3.0], look: [-4.8, 1.1, -16] }, //  work    · processing (z -16)
   { pos: [-2.5, 2.35, -19], look: [-3.3, 1.15, -31] }, //   skills  · storage    (z -32)
   { pos: [-1.6, 2.2, -34], look: [-4.7, 1.4, -48] }, //   skills  · control    (z -48)
-  { pos: [-2.2, 2.1, -50], look: [-4.6, 1.2, -63] }, //   contact · shipping   (z -64)
+  // contact · shipping (z -64). Closer and lower than the stops before it,
+  // looking into the gate as it rolls up: the doorway fills a fifth of the
+  // screen height, right of the copy.
+  { pos: [-3.4, 1.7, -56.5], look: [-3.4, 0.8, -68] },
 ];
 
 // Portrait camera path. The landscape keyframes above pan left so machinery
 // sits in the right ~40% of a wide screen — a tall screen has no right 40%.
-// This one rides straight down the corridor centreline at a constant pulled-
-// back offset (a gentle 3/4 from the right for depth), so each machine drifts
-// past small and legible with the corridor around it as you scroll. Machine i
-// sits at z = -STATION_GAP * i; storage (03) sits in the left lane so its beat
-// looks a touch left.
+// This one is the same walk turned round for a narrow frame: it keeps to the
+// lane right of the belt, at eye level as the landscape path does, and looks
+// across at each machine rather than past it, so the machine sits in the
+// middle of the screen with the hall going on behind it. Each stop is about
+// 2.5 units short of the next doorway and tilted a little down, which puts
+// the sign hanging there above the top of the screen, through the whole
+// hold, at every portrait aspect. From further back, and higher (it rode at
+// 3.6 to 3.9), that sign ran across the top of the screen at every stop,
+// cut off by its left edge. Machine i sits at z = -STATION_GAP * i; storage
+// (03) sits in the left lane.
 //
 // Which path a visitor gets is an ASPECT question, not a width one: three's
 // `fov` is vertical, so the horizontal frustum narrows with the aspect ratio
 // and nothing else. Projecting each machine's bounds through both cameras, the
 // landscape path holds every beat fully in frame down to aspect 1.0 and then
 // falls off fast (67% of the machine at 0.9, 33% at 0.7, nothing by 0.5),
-// while this one frames all five at every aspect from 0.42 to 2.4. So the
-// switch lives at 1/1 — see `portrait` in App.jsx. It used to key off
+// while this one holds the silo and vault whole at every aspect from 0.42 to
+// 1.0, and the drum from 0.46 (at 0.42 it just touches both edges). The
+// control room's wall is wider than a phone's view from any stop that keeps
+// its doorway's sign out, so on a phone it runs past both edges.
+// So the switch lives at 1/1 — see `portrait` in App.jsx. It used to key off
 // `max-width: 720px`, which is the same thing on a phone but leaves the band
 // above it wrong: a 768x1024 tablet is over 720px wide and gets the landscape
 // path at aspect 0.75, which cuts 33-44% off three of the five machines.
@@ -474,37 +527,70 @@ export const CAMERA_KEYFRAMES = [
 // control room's back wall, and passed within 0.1 of the drum: the keyframe
 // on the far side of each is tucked in behind it. Each via takes the camera
 // round the machine's outer end, then across behind it, where it's out of
-// view. Checked by projecting every part of every machine through the
-// camera along the whole route, at aspects 1.0 to 2.4: nothing in view comes
-// closer than 1.6 units.
+// view. The camera rides the route exactly, at any scrolling speed (CameraRig
+// damps its progress along it), so the route's clearance is the camera's.
+// Checked against every part of the scene, all five machines and the hall,
+// scrolled at reading pace up to a jump from the nav, at aspects 1.0 to 2.4:
+// the nearest thing in view is 2.7 units away (3.1 at 16:9). The pointer's
+// parallax can take up to 0.3 off that. The control room spans most of the
+// hall, so its pass runs about midway between its end and the columns.
 export const CAMERA_VIAS = {
   0: [[-3.0, 2.85, 0.6]], // wide of the silo
-  1: [[-3.9, 2.4, -16]], // left of the drum's intake end
+  1: [[-4.7, 2.4, -16]], // left of the drum's intake end (2.1 clear at -3.9)
   2: [
-    [-4.6, 2.35, -30.2], // left of the storage rack
-    [-4.4, 2.25, -33.9], // then across behind it
+    [-5.6, 2.35, -30.2], // left of the storage rack (1.9 clear at -4.6)
+    [-5.3, 2.25, -33.9], // then across behind it
   ],
   3: [
-    [-5.3, 2.25, -45.3], // past the control room's left end
-    [-5.1, 2.15, -49.7], // then across behind its back wall
+    [-6.1, 2.25, -45.3], // past the control room's left end (2.1 at -5.3)
+    [-5.9, 2.15, -49.7], // then across behind its back wall
   ],
 };
 
-export const CAMERA_WIDE_PORTRAIT = { pos: [2.4, 4.4, 17], look: [-1.6, 1.3, -6] };
+// The phone and tablet hero: just inside the entrance, at eye level in the
+// lane right of the belt, looking down the hall as the landscape hero does,
+// with the belt leading up to the silo. Projected through the camera, the
+// silo spans x 38-75% and y 14-62% of a 390x844 phone, standing right of the
+// photo with its foot behind the end of the name, and x 43-65% of a
+// 768x1024 tablet. It used to stand outside, tilted down at the floor, which
+// fitted the silo into the top corner but put the belt above the view, and
+// made the first scroll a climb and then a dive in through the entrance. On
+// load it pushes in from outside, with the entrance's sign and intake in
+// view.
+export const CAMERA_WIDE_PORTRAIT = { pos: [3.6, 4.6, 24], look: [-2, 0.4, 6] };
 export const CAMERA_KEYFRAMES_PORTRAIT = [
-  { pos: [1.2, 3.1, 11], look: [-1.7, 0.9, -4] }, //  ingestion  (z 0 — arrival: silo sits right-of-centre, low, so the title clears it)
-  { pos: [2.1, 3.6, -2], look: [0, 1.7, -19] }, //     processing (z -16)
-  { pos: [2.2, 3.7, -18], look: [-0.9, 1.6, -35] }, // storage    (z -32, left lane)
-  { pos: [2.1, 3.6, -34], look: [0, 1.7, -51] }, //   control    (z -48)
-  { pos: [2.1, 3.5, -50], look: [0, 1.5, -67] }, //   shipping   (z -64)
+  { pos: [2.4, 2.9, 12.5], look: [-1.6, 0.4, -4] }, //   ingestion  (z 0, from just inside the entrance at z 14)
+  { pos: [2.8, 2.4, -5.3], look: [0.3, 0.2, -16] }, //   processing (z -16)
+  { pos: [3.5, 2.4, -21.6], look: [-1.5, 0.3, -32.4] }, // storage  (z -32, left lane)
+  { pos: [3, 2.4, -37.3], look: [0.3, 0.5, -48] }, //    control    (z -48)
+  { pos: [2.2, 2.4, -55.5], look: [-0.2, 1, -69] }, //   shipping   (z -64, closer, into the gate)
 ];
 
-// Same idea as CAMERA_VIAS. The centreline path clears everything but the
-// control room, whose back wall it skimmed the top of (0.19 units).
-// Round its right end instead: 1.5 units clear at aspects 0.46 to 1.0.
+// How far the camera walks into the hall while the first machine's part of
+// the page (the hero and the first project) scrolls by: a share of the way to
+// the second machine, quickest at the first scroll (routeGoal in
+// scene/Scene.jsx). The rest of the way happens as the next project comes
+// up, as between the other machines.
+// Held at the entrance through all of that part, two and a half screens on
+// a phone and nearly two on a desktop, the camera seemed not to answer the
+// scroll at all. On a phone 0.3 brings it in close beside the silo. The
+// landscape path walks less, 0.2: its silo is already big in the frame, and
+// further in it would fill the right of the screen behind the first
+// project's dashboard. There it ends at the screen's right edge.
+export const CAMERA_LEAD_IN = 0.2;
+export const CAMERA_LEAD_IN_PORTRAIT = 0.3;
+
+// Same idea as CAMERA_VIAS, round each machine's right end, the camera's
+// side of the belt: wide of the silo, out past the drum's outlet end, and
+// out past the control room's right end and across behind it, clear of its
+// valance. The vault sits in the left lane, well away. Checked as
+// CAMERA_VIAS, at aspects 0.46 to 1.0: the nearest thing in view is 2.9
+// units away (the drum's outlet, at 1.0), and 3.9 on the push-in.
 export const CAMERA_VIAS_PORTRAIT = {
+  0: [[4.2, 2.65, 0.6]],
+  1: [[5.3, 2.45, -15.4]],
   3: [
-    [5.2, 3.55, -45.6],
-    [5.0, 3.5, -49.7],
+    [6.4, 2.45, -45.4],
+    [6.2, 2.4, -50.0],
   ],
 };

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFactory } from '../store.js';
 import { useMediaQuery } from '../hooks.js';
+import { beatAt, measureKnots } from '../beats.js';
 import {
   ABOUT,
   CERTIFICATIONS,
@@ -151,6 +152,11 @@ function ProgressRail() {
 // ---------------------------------------------------------------------------
 // Sections
 // ---------------------------------------------------------------------------
+// How wide the card shows the photo at each of styles.css's breakpoints: the
+// card's width less its padding and the frame's border. A phone at 3x lands
+// on the 400px copy, and so does a desktop at 1x.
+const PHOTO_SIZES = '(max-width: 720px) 132px, (max-width: 900px) 168px, 208px';
+
 function ProfileCard() {
   return (
     <aside className="profile" data-reveal>
@@ -158,6 +164,8 @@ function ProfileCard() {
         <img
           className="profile__photo"
           src={HERO.photo.src}
+          srcSet={HERO.photo.srcSet}
+          sizes={PHOTO_SIZES}
           alt={`${HERO.name}, ${HERO.role}`}
           width={HERO.photo.width}
           height={HERO.photo.height}
@@ -243,6 +251,60 @@ function EmbedStats({ stats }) {
   );
 }
 
+// When an embed's frame gets its page: once the visitor is within a screen of
+// it, or once the page has settled after load, whichever comes first. The
+// Niš dashboard draws its charts in script on the page's own main thread
+// (same origin), about a second's work on a mid-range phone. With only the
+// browser's lazy loading it started at once, far below the fold, in the
+// middle of everything else the page does on load. Settled means after the
+// 3D's opening push-in on a slow phone, and at a moment the visitor isn't
+// scrolling, since that second of script would stall the scroll. It still
+// usually loads before anyone gets down to it.
+const EMBED_SETTLE_MS = 8000;
+const EMBED_QUIET_MS = 1200;
+
+function useNear(ref) {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (near) return undefined;
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) {
+      setNear(true);
+      return undefined;
+    }
+    const go = () => setNear(true);
+    // the page scrolls inside .viewport, so that's what "a screen away" means
+    const root = el.closest('.viewport');
+    const scroller = root || window;
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && go(), {
+      root,
+      rootMargin: '100% 0px',
+    });
+    io.observe(el);
+    let lastScroll = -Infinity;
+    const onScroll = () => {
+      lastScroll = performance.now();
+    };
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    let timer = 0;
+    let idle = 0;
+    const settle = () => {
+      const wait = lastScroll + EMBED_QUIET_MS - performance.now();
+      if (wait > 0) timer = setTimeout(settle, wait);
+      else if (window.requestIdleCallback) idle = window.requestIdleCallback(go, { timeout: 3000 });
+      else go();
+    };
+    timer = setTimeout(settle, EMBED_SETTLE_MS);
+    return () => {
+      io.disconnect();
+      scroller.removeEventListener('scroll', onScroll);
+      clearTimeout(timer);
+      if (idle) window.cancelIdleCallback(idle);
+    };
+  }, [near, ref]);
+  return near;
+}
+
 // A project whose visual is a live embed rather than a static image.
 //
 // Same-origin panels post their content height to us so the iframe never
@@ -255,6 +317,8 @@ function ProjectEmbed({ embed, onLink, onActivate }) {
   const [height, setHeight] = useState(embed.minHeight || 780);
   const [live, setLive] = useState(false);
   const source = embed.source;
+  const frame = useRef();
+  const near = useNear(frame);
 
   // dbt's graph doesn't refit to a narrow frame, it just crops — below about a
   // 960px frame you land on a corner of the DAG with the control bar wrapped
@@ -299,6 +363,7 @@ function ProjectEmbed({ embed, onLink, onActivate }) {
 
       {showFrame ? (
         <div
+          ref={frame}
           className={`project__embed-frame${embed.inset ? ' project__embed-frame--crop' : ''}`}
           style={
             embed.inset
@@ -306,16 +371,21 @@ function ProjectEmbed({ embed, onLink, onActivate }) {
               : undefined
           }
         >
-          <iframe
-            src={embed.src}
-            title={embed.frameTitle || embed.title}
-            loading="lazy"
-            scrolling={embed.inset ? 'no' : undefined}
-            style={{
-              pointerEvents: embed.external && !live ? 'none' : undefined,
-              ...(embed.inset ? null : { height: embed.height || height }),
-            }}
-          />
+          {near ? (
+            <iframe
+              src={embed.src}
+              title={embed.frameTitle || embed.title}
+              loading="lazy"
+              scrolling={embed.inset ? 'no' : undefined}
+              style={{
+                pointerEvents: embed.external && !live ? 'none' : undefined,
+                ...(embed.inset ? null : { height: embed.height || height }),
+              }}
+            />
+          ) : embed.inset ? null : (
+            // holds the frame's height until the page goes in (useNear)
+            <div className="project__embed-hold" style={{ height: embed.height || height }} />
+          )}
           {embed.external && !live ? (
             <button
               className="embed__shield"
@@ -362,7 +432,12 @@ function Work() {
 
       <ol className="work__list">
         {PROJECTS.map((p, i) => (
-          <li key={p.id} className={p.bench ? 'project project--chart' : 'project'} data-reveal>
+          <li
+            key={p.id}
+            id={p.id}
+            className={p.bench ? 'project project--chart' : 'project'}
+            data-reveal
+          >
             <div className="project__aside">
               <span className="project__index">{String(i + 1).padStart(2, '0')}</span>
               <span className="project__year">{p.year}</span>
@@ -399,7 +474,8 @@ function Work() {
             </div>
             {p.image ? (
               <figure className="project__figure">
-                <img src={p.image} alt={p.imageAlt || `${p.title} screenshot`} loading="lazy" />
+                {/* loading before src, see SnapPhoto */}
+                <img loading="lazy" src={p.image} alt={p.imageAlt || `${p.title} screenshot`} />
               </figure>
             ) : null}
             {p.bench && (
@@ -424,16 +500,22 @@ function Work() {
 
 // A small captioned snapshot under an experience or education entry. The width
 // and height are the file's real ones so the page doesn't shift as it loads.
+//
+// `loading` goes before `src` on a lazy image. React 18 sets the attributes
+// in the order they're written, on an image that isn't in the page yet, and
+// an image starts its download the moment it gets a src. Written after,
+// "lazy" came too late: every visitor downloaded this photo at startup,
+// alongside the 3D's own files.
 function SnapPhoto({ photo }) {
   return (
     <figure className="snap">
       <img
+        loading="lazy"
         className="snap__img"
         src={photo.src}
         width={photo.width}
         height={photo.height}
         alt={photo.alt}
-        loading="lazy"
         decoding="async"
       />
       <figcaption className="snap__cap">{photo.caption}</figcaption>
@@ -604,22 +686,24 @@ function Contact() {
 // Assembly
 // ---------------------------------------------------------------------------
 export default function HUD() {
-  const setProgress = useFactory((s) => s.setProgress);
+  const setScroll = useFactory((s) => s.setScroll);
   const viewport = useRef();
   const ticking = useRef(false);
   const pending = useRef([]); // [data-reveal] elements not yet shown
+  const knots = useRef(null); // where each machine sits in the scroll (beats.js)
 
   // One rAF-throttled pass per scroll handles both jobs: the 0..1 progress
-  // for the rail fill, and revealing any [data-reveal] that has entered the
-  // lower viewport. Doing reveals here (rather than via IntersectionObserver)
-  // means a fast fling can't skip an element — anything scrolled past just
-  // reads as top < threshold and gets shown.
+  // for the rail fill and the scene, and revealing any [data-reveal] that has
+  // entered the lower viewport. Doing reveals here (rather than via
+  // IntersectionObserver) means a fast fling can't skip an element — anything
+  // scrolled past just reads as top < threshold and gets shown.
   const sample = () => {
     const el = viewport.current;
     if (!el) return;
 
     const max = el.scrollHeight - el.clientHeight;
-    setProgress(max > 0 ? el.scrollTop / max : 0);
+    const progress = max > 0 ? el.scrollTop / max : 0;
+    setScroll(progress, beatAt(progress, knots.current));
 
     const trigger = el.clientHeight * 0.92;
     if (pending.current.length) {
@@ -660,6 +744,7 @@ export default function HUD() {
     }
 
     pending.current = [...root.querySelectorAll('[data-reveal]')];
+    knots.current = measureKnots(root);
     if (document.documentElement.hasAttribute('data-swap')) {
       // Mounting over the prerendered page (main.jsx): what's on screen was
       // already showing, so reveal it with transitions off. Reading layout
@@ -681,11 +766,17 @@ export default function HUD() {
     // On a cold load the viewport can still be 0-height when this effect
     // runs — that zeroes the reveal threshold in sample(), so the first
     // screen (hero + profile card) stays hidden until the visitor scrolls.
-    // Re-sample once it has a real height, and on any later resize.
-    const resizeObserver = new ResizeObserver(() => onScroll());
-    resizeObserver.observe(root);
-
+    // Re-sample once it has a real height, and on any later resize. The
+    // sections are watched too: when an embed settles on its height or a
+    // font loads, the machines' places in the scroll move with the page.
     const sections = [...root.querySelectorAll('.section')];
+    const resizeObserver = new ResizeObserver(() => {
+      knots.current = measureKnots(root);
+      onScroll();
+    });
+    resizeObserver.observe(root);
+    sections.forEach((s) => resizeObserver.observe(s));
+
     const sectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

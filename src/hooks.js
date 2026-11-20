@@ -18,7 +18,7 @@ export function useMediaQuery(query) {
 // Coarse capability tiers. `full` gets postprocessing + dense particles,
 // `lite` runs the 3D scene stripped down, `flat` is the static 2D backdrop —
 // only when WebGL genuinely can't run. Phones get `lite` + `portrait` (the
-// centreline camera path). This is a hardware read only, deliberately blind
+// portrait camera path). This is a hardware read only, deliberately blind
 // to prefers-reduced-motion — that preference is handled separately by the
 // `calm` flag in store.js (topbar toggle; defaults to full motion regardless
 // of the OS setting, see the comment on initialCalm there for why), which

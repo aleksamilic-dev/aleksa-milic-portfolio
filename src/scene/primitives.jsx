@@ -35,6 +35,10 @@ export const cast = (tone = 'dark', over = {}) => ({
   ...over,
 });
 
+// The ochre of the floor's painted lines, for anything else in safety paint:
+// the column feet, the bollards at the dock.
+export const SAFETY = { color: '#a8893a', roughness: 0.85, metalness: 0 };
+
 // --- greebles -------------------------------------------------------------
 // A ring of bolt heads around `axis` (default 'y'). One instanced draw call
 // regardless of count — cheap enough to sprinkle on every flange.
@@ -225,6 +229,44 @@ export function Pipe({ points, radius = 0.07, color = PALETTE.blue, emissive = 0
             <meshStandardMaterial {...steel('dark', { roughness: 0.4 })} />
           </mesh>
         ))}
+    </group>
+  );
+}
+
+// Hazard striping: amber bands leaning at 45° across a dark plate `w` by `h`,
+// in the X–Y plane, facing +Z, its back on the group's origin so it can be
+// set straight onto a face. The bands stop at the plate's top and bottom and
+// a band short of its ends, so nothing runs past the plate. One merged mesh
+// for the bands, so a long stripe is as cheap as a short one.
+export function HazardStripes({ w = 1, h = 0.2, pitch = 0.18, depth = 0.02, glow = 0.3, ...props }) {
+  const bands = useMemo(() => {
+    const band = pitch / 2;
+    const pos = [];
+    for (let x = -w / 2; x + band + h <= w / 2 + 1e-6; x += pitch) {
+      const [a, b] = [x, x + band];
+      // a parallelogram: its bottom edge from a to b, its top shifted by h
+      pos.push(a, -h / 2, 0, b, -h / 2, 0, b + h, h / 2, 0, a, -h / 2, 0, b + h, h / 2, 0, a + h, h / 2, 0);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    return g;
+  }, [w, h, pitch]);
+  return (
+    <group {...props}>
+      <mesh position={[0, 0, depth / 2]}>
+        <boxGeometry args={[w, h, depth]} />
+        <meshStandardMaterial color="#14181d" metalness={0.3} roughness={0.7} />
+      </mesh>
+      <mesh geometry={bands} position={[0, 0, depth + 0.002]}>
+        <meshStandardMaterial
+          color={PALETTE.amber}
+          emissive={PALETTE.amber}
+          emissiveIntensity={glow}
+          metalness={0.1}
+          roughness={0.6}
+        />
+      </mesh>
     </group>
   );
 }

@@ -23,8 +23,9 @@ export default function App() {
   // Which camera path the scene flies. This is an aspect question, not a width
   // one — three's `fov` is vertical, so only the aspect ratio decides how much
   // of the corridor fits sideways. The landscape keyframes hold every machine
-  // in frame down to 1/1 and crop hard below it; the portrait path frames all
-  // five at any aspect. See the note above CAMERA_KEYFRAMES_PORTRAIT in
+  // in frame down to 1/1 and crop hard below it; the portrait path looks
+  // across at each machine instead, which a narrow screen has room for. See
+  // the note above CAMERA_KEYFRAMES_PORTRAIT in
   // data.js. (Was `max-width: 720px`, which is right on a phone but hands a
   // 768x1024 tablet the landscape path at aspect 0.75.)
   const portrait = useMediaQuery('(max-aspect-ratio: 1/1)');
@@ -33,6 +34,11 @@ export default function App() {
   // time the visitor scrolled into a new section, which on a phone was a
   // long frame each time.
   const calm = useFactory((s) => s.calm);
+  // The system's reduced-motion setting doesn't stop the scene (see `calm`
+  // below and store.js), but it does stop the camera flying: with it on, the
+  // camera holds at each machine and fades across to the next (`still` in
+  // scene/Scene.jsx).
+  const still = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   if (INSPECT !== null) {
     return (
@@ -73,7 +79,7 @@ export default function App() {
           <Fallback />
         ) : (
           <Suspense fallback={null}>
-            <Scene tier={tier} portrait={portrait} />
+            <Scene tier={tier} portrait={portrait} still={still} />
           </Suspense>
         )}
       </div>

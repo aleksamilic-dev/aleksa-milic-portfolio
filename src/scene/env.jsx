@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Environment, Lightformer } from '@react-three/drei';
 import { PALETTE } from '../data.js';
 
@@ -5,7 +6,13 @@ import { PALETTE } from '../data.js';
 // and the mobile hero). This is what every metal surface reflects, so it
 // carries a lot of the material read — keep it directional but not blown out.
 // Baked once (`frames={1}`); cheap to keep mounted.
-export function StudioEnv() {
+//
+// Memoised, because drei bakes again whenever the children change, and every
+// render of this component makes new ones. The scene re-renders as it starts
+// drawing, at each resolution step and when the glow goes, and each time it
+// was a fresh bake, then fresh reflection maps on the next frame. The first
+// frame on a phone carried both.
+export const StudioEnv = memo(function StudioEnv() {
   return (
     <Environment resolution={128} frames={1}>
       <color attach="background" args={['#0a0f16']} />
@@ -19,4 +26,4 @@ export function StudioEnv() {
       <Lightformer intensity={0.7} color="#1a2530" position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[12, 12, 1]} />
     </Environment>
   );
-}
+});
