@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Component, lazy, Suspense, useCallback, useState } from 'react';
 import { useFactory } from './store.js';
 import { useDeviceTier, useMediaQuery } from './hooks.js';
 import HUD from './ui/HUD.jsx';
@@ -18,8 +18,29 @@ const INSPECT =
     ? new URLSearchParams(window.location.search).get('inspect')
     : null;
 
+// If the 3D can't start, the flat backdrop takes its place: the device
+// wouldn't hand the renderer a WebGL context after all (useDeviceTier only
+// checks the browser has WebGL2), or the scene's code failed to download.
+class SceneBoundary extends Component {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onFail();
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 export default function App() {
   const tier = useDeviceTier();
+  const [sceneFailed, setSceneFailed] = useState(false);
+  const onSceneFail = useCallback(() => setSceneFailed(true), []);
   // Which camera path the scene flies. This is an aspect question, not a width
   // one — three's `fov` is vertical, so only the aspect ratio decides how much
   // of the corridor fits sideways. The landscape keyframes hold every machine
@@ -59,7 +80,7 @@ export default function App() {
   // static backdrop the flat tier uses, which is what actually stops the
   // 3D's motion (unmounting <Scene> halts its render loop; the CSS-level
   // motion is handled by [data-motion] below).
-  const showFallback = tier === 'flat' || calm;
+  const showFallback = tier === 'flat' || calm || sceneFailed;
 
   // `data-backdrop` is what's actually behind the copy, which isn't the same
   // question as `data-tier`: a wide desktop where the visitor has turned the
@@ -78,9 +99,11 @@ export default function App() {
         {showFallback ? (
           <Fallback />
         ) : (
-          <Suspense fallback={null}>
-            <Scene tier={tier} portrait={portrait} still={still} />
-          </Suspense>
+          <SceneBoundary onFail={onSceneFail}>
+            <Suspense fallback={null}>
+              <Scene tier={tier} portrait={portrait} still={still} />
+            </Suspense>
+          </SceneBoundary>
         )}
       </div>
 

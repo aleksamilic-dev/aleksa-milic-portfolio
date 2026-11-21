@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { PULSE_CHANNELS, pulseGlow } from './pulse.js';
 
 // Marks a part as moving: an animation changes its transform or its material.
 // <StaticBatch> leaves it, and everything inside it, alone. Every element in
@@ -89,14 +90,26 @@ function materialKey(m) {
 // MeshStandardMaterial with its roughness, metalness, reflection strength
 // and glow read from each vertex (`surface`: roughness, metalness,
 // envMapIntensity; `glow`: emissive times its intensity) instead of from the
-// material. Its colour is three's own vertex colour.
+// material. Its colour is three's own vertex colour. A part with a glow
+// channel (`pulse`, pulse.js) takes its glow from the channel instead, set
+// every frame.
 function readsSurface(shader) {
+  shader.uniforms.pulseGlow = pulseGlow;
   shader.vertexShader = shader.vertexShader
     .replace(
       '#include <common>',
-      '#include <common>\nattribute vec3 surface;\nattribute vec3 glow;\nvarying vec3 vSurface;\nvarying vec3 vGlow;',
+      `#include <common>
+attribute vec3 surface;
+attribute vec3 glow;
+attribute float pulse;
+uniform vec3 pulseGlow[${PULSE_CHANNELS}];
+varying vec3 vSurface;
+varying vec3 vGlow;`,
     )
-    .replace('#include <color_vertex>', '#include <color_vertex>\nvSurface = surface;\nvGlow = glow;');
+    .replace(
+      '#include <color_vertex>',
+      '#include <color_vertex>\nvSurface = surface;\nvGlow = pulse < 0.0 ? glow : pulseGlow[int(pulse)];',
+    );
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vSurface;\nvarying vec3 vGlow;')
     .replace(
@@ -187,10 +200,10 @@ function constant(n, values) {
 }
 
 // A prepared copy carrying its material's colour (and for a lit surface its
-// roughness, metalness, reflection strength and glow) at every vertex, for
-// batchedMaterial. Colours are in three's linear working space, as the
-// material holds them.
-function surfaceAttributes(geometry, matrix, m) {
+// roughness, metalness, reflection strength, glow and glow channel, -1 for
+// none) at every vertex, for batchedMaterial. Colours are in three's linear
+// working space, as the material holds them.
+function surfaceAttributes(geometry, matrix, m, pulse) {
   const g = prepared(geometry, matrix, false);
   const n = g.attributes.position.count;
   g.setAttribute('color', constant(n, [m.color.r, m.color.g, m.color.b]));
@@ -198,6 +211,7 @@ function surfaceAttributes(geometry, matrix, m) {
     const e = m.emissiveIntensity;
     g.setAttribute('surface', constant(n, [m.roughness, m.metalness, m.envMapIntensity]));
     g.setAttribute('glow', constant(n, [m.emissive.r * e, m.emissive.g * e, m.emissive.b * e]));
+    g.setAttribute('pulse', constant(n, [pulse]));
   }
   return g;
 }
@@ -252,8 +266,9 @@ export function StaticBatch({ own = false, extend, children }) {
       const b = buckets.get(key);
 
       relative.multiplyMatrices(toRoot, o.matrixWorld);
+      const pulse = o.userData.pulse ?? -1;
       const copy = (matrix) =>
-        painted ? surfaceAttributes(o.geometry, matrix, mat) : prepared(o.geometry, matrix, true);
+        painted ? surfaceAttributes(o.geometry, matrix, mat, pulse) : prepared(o.geometry, matrix, true);
       if (o.isInstancedMesh) {
         for (let i = 0; i < o.count; i++) {
           o.getMatrixAt(i, instance);

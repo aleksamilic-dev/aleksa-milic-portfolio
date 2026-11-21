@@ -33,6 +33,10 @@ jobs:
 
       - run: npm run build
 
+      # The JavaScript a visitor downloads, against its budget, so a change
+      # can't quietly make the page slower to start.
+      - run: npm run size
+
       # Only the hashed assets are compared, not docs/index.html: that file is
       # written by headless Chrome (scripts/prerender.mjs) and can differ in
       # whitespace-level ways between machines. The assets are Vite's output and

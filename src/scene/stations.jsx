@@ -9,6 +9,7 @@ import { LIVE, StaticBatch } from './batch.jsx';
 import { Band, BoltRing, Gear, HazardStripes, Node, Pipe, SAFETY, Screen, cast, steel } from './primitives.jsx';
 import { DUCT, TAPS } from './services.js';
 import { SUNLIT } from './daylight.js';
+import { PULSE, setPulse } from './pulse.js';
 
 // Where machine i sits along the belt, as distance from its head: what
 // batchPulse takes. Each machine reacts as a batch goes through it: the
@@ -21,12 +22,22 @@ const CHECKS = onBelt(3) + 2.25;
 const PASSED = new THREE.Color(PALETTE.green);
 const WATCHING = new THREE.Color(PALETTE.blueBright);
 
+// The parts whose only animation is their glow are merged into their
+// machine's batch and given a glow channel (pulse.js), which each machine
+// sets every frame below: the glow's colour times how strong it is now.
+const AMBER = new THREE.Color(PALETTE.amber);
+const BLUE_BRIGHT = new THREE.Color(PALETTE.blueBright);
+const washGlow = new THREE.Color();
+
+// the hall's cable sheathing (hall.jsx), for cables on the machines
+const CABLE = { color: '#1c2229', metalness: 0.15, roughness: 0.75 };
+
 // Every machine here runs at roughly half the animation speed and half the
-// emissive punch of the original "tour" version â€” it's ambient backdrop now,
+// emissive punch of the original "tour" version — it's ambient backdrop now,
 // sitting behind a scrim, not the subject.
 
 // ---------------------------------------------------------------------------
-// 01 â€” Ingestion Dock : an intake silo. Raw data is drawn in through the rotary
+// 01 — Ingestion Dock : an intake silo. Raw data is drawn in through the rotary
 // head and the hooded front port, accumulates in the silo, and funnels down the
 // hopper into the spine. Raw in, one stream out.
 // ---------------------------------------------------------------------------
@@ -36,14 +47,11 @@ const HEAD_Y = 4.02; // the rotary intake head, which the intake duct drops into
 
 export function IngestionDock() {
   const rotor = useRef();
-  const grille = useRef();
   const fill = useRef();
-  const valve = useRef();
   useFrame(() => {
     const t = flow.t;
     if (rotor.current) rotor.current.rotation.y = t * 0.3;
-    if (grille.current)
-      grille.current.material.emissiveIntensity = 0.7 + Math.sin(t * 1.6) * 0.3;
+    setPulse(PULSE.siloGrille, AMBER, 0.7 + Math.sin(t * 1.6) * 0.3);
     if (fill.current) {
       // accumulated data settles up over ~28s, then drains and refills
       const k = 0.12 + (0.5 - Math.cos(t * 0.22) * 0.5) * 0.8;
@@ -51,7 +59,7 @@ export function IngestionDock() {
       fill.current.position.y = GAUGE_FOOT + (k * GAUGE_H) / 2;
     }
     // flashes as each batch is let out onto the belt below
-    if (valve.current) valve.current.material.emissiveIntensity = 0.3 + 1.4 * batchPulse(onBelt(0));
+    setPulse(PULSE.siloValve, AMBER, 0.3 + 1.4 * batchPulse(onBelt(0)));
   });
 
   return (
@@ -83,7 +91,7 @@ export function IngestionDock() {
       })}
       <Band radius={0.74} tube={0.05} position={[0, 0.44, 0]} rotation={[Math.PI / 2, 0, 0]} />
 
-      {/* conical hopper â€” the accumulated data funnels to one discharge */}
+      {/* conical hopper — the accumulated data funnels to one discharge */}
       <mesh position={[0, 1.02, 0]}>
         <cylinderGeometry args={[0.9, 0.15, 1.22, 28, 1, true]} />
         <meshStandardMaterial {...steel('steel', { roughness: 0.36 })} side={THREE.DoubleSide} />
@@ -92,13 +100,13 @@ export function IngestionDock() {
         <boxGeometry args={[0.36, 0.32, 0.36]} />
         <meshStandardMaterial {...cast('dark')} />
       </mesh>
-      <mesh userData={LIVE} ref={valve} position={[0, 0.33, 0.19]}>
+      <mesh userData={{ pulse: PULSE.siloValve }} position={[0, 0.33, 0.19]}>
         <planeGeometry args={[0.15, 0.15]} />
         <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.3} toneMapped={false} />
       </mesh>
       <BoltRing count={8} radius={0.19} r={0.022} position={[0, 0.5, 0]} />
 
-      {/* cylindrical body â€” plate courses, weld strakes, an inspection hatch */}
+      {/* cylindrical body — plate courses, weld strakes, an inspection hatch */}
       <mesh position={[0, 2.54, 0]}>
         <cylinderGeometry args={[0.92, 0.92, 2.06, 36, 1, true]} />
         <meshStandardMaterial {...steel('steel', { roughness: 0.3 })} side={THREE.DoubleSide} />
@@ -149,7 +157,9 @@ export function IngestionDock() {
         );
       })}
 
-      {/* rotary intake head â€” pulls the gathered feeds in; the rotor spins */}
+      <DomeFittings />
+
+      {/* rotary intake head — pulls the gathered feeds in; the rotor spins */}
       <group position={[0, HEAD_Y, 0]}>
         <mesh>
           <cylinderGeometry args={[0.46, 0.46, 0.32, 24]} />
@@ -188,7 +198,7 @@ export function IngestionDock() {
         </group>
       </group>
 
-      {/* hooded intake port on the front â€” lit throat behind crossbars */}
+      {/* hooded intake port on the front — lit throat behind crossbars */}
       <group position={[0, 2.74, 0.92]}>
         <mesh position={[0, 0, -0.02]}>
           <boxGeometry args={[0.92, 0.66, 0.12]} />
@@ -204,7 +214,7 @@ export function IngestionDock() {
             <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
           </mesh>
         ))}
-        <mesh userData={LIVE} ref={grille} position={[0, -0.02, 0.05]}>
+        <mesh userData={{ pulse: PULSE.siloGrille }} position={[0, -0.02, 0.05]}>
           <planeGeometry args={[0.78, 0.46]} />
           <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.9} toneMapped={false} />
         </mesh>
@@ -216,7 +226,7 @@ export function IngestionDock() {
         ))}
       </group>
 
-      {/* level gauge â€” accumulated data creeping up, then draining */}
+      {/* level gauge — accumulated data creeping up, then draining */}
       <group position={[0.8, 2.5, 0.46]} rotation={[0, 1.05, 0]}>
         <mesh>
           <boxGeometry args={[0.12, 1.66, 0.08]} />
@@ -234,7 +244,7 @@ export function IngestionDock() {
         ))}
       </group>
 
-      {/* fill standpipe up the side â€” capped head, elbow into the base, clamped
+      {/* fill standpipe up the side — capped head, elbow into the base, clamped
           to the shell */}
       <group position={[-1.0, 2.42, 0.12]}>
         <mesh>
@@ -279,7 +289,7 @@ export function IngestionDock() {
       {/* access ladder + safety cage up the front-left */}
       <Ladder position={[-0.52, 0, 0.78]} rotation={[0, -0.6, 0]} y0={0.5} y1={3.55} />
 
-      {/* the one outfeed â€” stream down out of the hopper to the spine */}
+      {/* the one outfeed — stream down out of the hopper to the spine */}
       <Pipe
         points={[[0, 0.14, -0.14], [0, 0.3, -1.9], [0, 0.34, -4]]}
         radius={0.09}
@@ -291,13 +301,82 @@ export function IngestionDock() {
   );
 }
 
+// What sits on the silo's domed head round the intake: a breather vent
+// with a rain cap at the back, a bolted manway at the front, and a level
+// sensor at the side. Each stands square to the dome where it sits (the
+// dome is the top half of a sphere 0.92 across, squashed to half height).
+const DOME = { y: 3.57, r: 0.92, h: 0.46 };
+const UP = new THREE.Vector3(0, 1, 0);
+
+// the point on the dome above (x, z), and the dome's normal there
+function onDome(x, z) {
+  const k = Math.sqrt(Math.max(0, 1 - (x * x + z * z) / (DOME.r * DOME.r)));
+  const at = new THREE.Vector3(x, DOME.y + DOME.h * k, z);
+  const normal = new THREE.Vector3(x / DOME.r ** 2, (DOME.h * k) / DOME.h ** 2, z / DOME.r ** 2).normalize();
+  return { at, turn: new THREE.Quaternion().setFromUnitVectors(UP, normal) };
+}
+
+function DomeFittings() {
+  const vent = useMemo(() => onDome(0.52, -0.44), []);
+  const manway = useMemo(() => onDome(-0.48, 0.48), []);
+  const sensor = useMemo(() => onDome(0.66, 0.2), []);
+  return (
+    <group>
+      {/* the vent stands upright, as vents do, on a collar on the dome */}
+      <group position={vent.at}>
+        <mesh position={[0, 0.16, 0]}>
+          <cylinderGeometry args={[0.045, 0.045, 0.34, 10]} />
+          <meshStandardMaterial {...steel('steel', { roughness: 0.36 })} />
+        </mesh>
+        <mesh position={[0, 0.01, 0]}>
+          <cylinderGeometry args={[0.075, 0.09, 0.06, 12]} />
+          <meshStandardMaterial {...steel('dark', { roughness: 0.45 })} />
+        </mesh>
+        <mesh position={[0, 0.36, 0]}>
+          <coneGeometry args={[0.11, 0.08, 12]} />
+          <meshStandardMaterial {...steel('light', { roughness: 0.32 })} />
+        </mesh>
+      </group>
+      <group position={manway.at} quaternion={manway.turn}>
+        <mesh position={[0, 0.04, 0]}>
+          <cylinderGeometry args={[0.15, 0.16, 0.08, 20]} />
+          <meshStandardMaterial {...steel('dark', { roughness: 0.45 })} />
+        </mesh>
+        <mesh position={[0, 0.095, 0]}>
+          <cylinderGeometry args={[0.175, 0.175, 0.03, 20]} />
+          <meshStandardMaterial {...steel('steel', { roughness: 0.36 })} />
+        </mesh>
+        <BoltRing count={8} radius={0.15} r={0.014} position={[0, 0.115, 0]} />
+        <mesh position={[0, 0.125, 0]}>
+          <boxGeometry args={[0.14, 0.025, 0.025]} />
+          <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+        </mesh>
+      </group>
+      <group position={sensor.at} quaternion={sensor.turn}>
+        <mesh position={[0, 0.05, 0]}>
+          <boxGeometry args={[0.12, 0.1, 0.12]} />
+          <meshStandardMaterial {...cast('dark', { roughness: 0.6 })} />
+        </mesh>
+        <mesh position={[0, 0.16, 0]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.14, 6]} />
+          <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+        </mesh>
+        <mesh position={[0.045, 0.07, 0.061]}>
+          <sphereGeometry args={[0.012, 8, 6]} />
+          <meshBasicMaterial color={PALETTE.green} toneMapped={false} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 // A vertical caged ladder. Rungs are instanced (one draw call); the cage is a
 // handful of hoops bulging out for climbing clearance.
 function Ladder({ position = [0, 0, 0], rotation = [0, 0, 0], y0 = 0, y1 = 3, rungs = 12 }) {
   const ref = useRef();
   useLayoutEffect(() => {
     const m = new THREE.Object3D();
-    // Math.max(â€¦, 1): the only current call site never overrides `rungs`
+    // Math.max(…, 1): the only current call site never overrides `rungs`
     // (always the default 12), but a single-rung ladder would divide by
     // (rungs - 1) = 0 and place every rung at NaN.
     const step = (y1 - y0 - 0.4) / Math.max(rungs - 1, 1);
@@ -335,32 +414,56 @@ function Ladder({ position = [0, 0, 0], rotation = [0, 0, 0], y0 = 0, y1 = 3, ru
 }
 
 // ---------------------------------------------------------------------------
-// 02 â€” Processing Hall : a rotary reactor drum. Raw data drops into the heavy
+// 02 — Processing Hall : a rotary reactor drum. Raw data drops into the heavy
 // intake end, tumbles through the glowing core, and leaves the tapered outlet
 // refined. A gear-motor turns the drum on its trunnion rollers.
 // ---------------------------------------------------------------------------
 export function ProcessingHall() {
   const drum = useRef();
-  const coreA = useRef();
-  const coreB = useRef();
   useFrame(() => {
     const t = flow.t;
     if (drum.current) drum.current.rotation.x = t * 0.42;
     // a steady churn, and a surge while a batch is inside being refined
     const pulse = 1.15 + Math.sin(t * 3) * 0.45 + 1.1 * batchPulse(onBelt(1));
-    if (coreA.current) coreA.current.material.emissiveIntensity = pulse * 0.78;
-    if (coreB.current) coreB.current.material.emissiveIntensity = pulse * 1.2;
+    setPulse(PULSE.drumRaw, AMBER, pulse * 0.78);
+    setPulse(PULSE.drumRefined, BLUE_BRIGHT, pulse * 1.2);
   });
 
   return (
     <group position={[0, 1.15, 0]}>
-      {/* cradle â€” a floor beam + a stand with two trunnion rollers each side,
+      {/* cradle — a floor beam + a stand with two trunnion rollers each side,
           the beam's face striped where the drum turns over it */}
       <mesh position={[0, -1.62, 0]}>
         <boxGeometry args={[3.8, 0.3, 1.5]} />
         <meshStandardMaterial {...cast('dark')} />
       </mesh>
       <HazardStripes w={3.4} h={0.2} position={[0, -1.62, 0.75]} />
+      {/* the trunnion rollers' grease feed: a lubricator on the near stand,
+          a line down to its roller, and one along the top of the beam and
+          up to the far stand's */}
+      <mesh position={[-1.5, -0.8, 0.73]}>
+        <boxGeometry args={[0.18, 0.13, 0.06]} />
+        <meshStandardMaterial {...cast('dark', { roughness: 0.6 })} />
+      </mesh>
+      <mesh position={[-1.44, -0.71, 0.765]}>
+        <cylinderGeometry args={[0.03, 0.03, 0.06, 10]} />
+        <meshStandardMaterial color={PALETTE.amberDeep} metalness={0.3} roughness={0.5} />
+      </mesh>
+      {[
+        // [x, from y, to y]
+        [-1.42, -0.87, -1.2],
+        [-1.56, -0.87, -1.44],
+        [1.44, -1.44, -1.2],
+      ].map(([x, y0, y1]) => (
+        <mesh key={`${x}:${y1}`} position={[x, (y0 + y1) / 2, 0.72]}>
+          <cylinderGeometry args={[0.012, 0.012, Math.abs(y0 - y1), 6]} />
+          <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+        </mesh>
+      ))}
+      <mesh position={[(-1.56 + 1.44) / 2, -1.44, 0.72]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.012, 0.012, 3.0, 6]} />
+        <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+      </mesh>
       {[-1.5, 1.5].map((x) => (
         <group key={x} position={[x, 0, 0]}>
           <mesh position={[0, -1.05, 0]}>
@@ -377,7 +480,7 @@ export function ProcessingHall() {
         </group>
       ))}
 
-      {/* rotating reactor shell â€” turns on its X axis, riding the trunnions.
+      {/* rotating reactor shell — turns on its X axis, riding the trunnions.
           Faintly translucent so the two-tone core reads through the wall;
           front-face only (the hero camera never sees the far wall). */}
       <group userData={LIVE} ref={drum}>
@@ -419,7 +522,7 @@ export function ProcessingHall() {
               <meshStandardMaterial {...steel('steel', { roughness: 0.36 })} />
             </mesh>
           </group>
-          {/* girth (bull) gear â€” the drive ring, heavier than the ribs */}
+          {/* girth (bull) gear — the drive ring, heavier than the ribs */}
           <Gear
             radius={1.24}
             teeth={34}
@@ -432,16 +535,16 @@ export function ProcessingHall() {
       </group>
 
       {/* two-tone core: a short raw (amber) intake zone, then most of the length
-          runs refined (blue) â€” the change happens early as it tumbles through */}
-      <mesh userData={LIVE} ref={coreA} rotation={[0, 0, Math.PI / 2]} position={[-1.06, 0, 0]}>
+          runs refined (blue) — the change happens early as it tumbles through */}
+      <mesh userData={{ pulse: PULSE.drumRaw }} rotation={[0, 0, Math.PI / 2]} position={[-1.06, 0, 0]}>
         <cylinderGeometry args={[0.56, 0.64, 1.7, 24]} />
         <meshStandardMaterial color={PALETTE.amberBright} emissive={PALETTE.amber} emissiveIntensity={0.9} toneMapped={false} />
       </mesh>
-      <mesh userData={LIVE} ref={coreB} rotation={[0, 0, Math.PI / 2]} position={[0.72, 0, 0]}>
+      <mesh userData={{ pulse: PULSE.drumRefined }} rotation={[0, 0, Math.PI / 2]} position={[0.72, 0, 0]}>
         <cylinderGeometry args={[0.64, 0.46, 2.5, 24]} />
         <meshStandardMaterial color={PALETTE.blueBright} emissive={PALETTE.blueBright} emissiveIntensity={1.4} toneMapped={false} />
       </mesh>
-      {/* intake end (âˆ’X): a heavy flanged hub with a raw-feed hopper dropping in */}
+      {/* intake end (−X): a heavy flanged hub with a raw-feed hopper dropping in */}
       <group position={[-1.7, 0, 0]}>
         <mesh rotation={[0, Math.PI / 2, 0]}>
           <torusGeometry args={[1.06, 0.18, 12, 32]} />
@@ -460,7 +563,7 @@ export function ProcessingHall() {
           <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.5} toneMapped={false} />
         </mesh>
         <BoltRing count={14} radius={1.06} r={0.034} axis="x" />
-        {/* raw-feed hopper â€” a chute dropping in over the intake hub */}
+        {/* raw-feed hopper — a chute dropping in over the intake hub */}
         <mesh position={[0.08, 1.0, 0.58]} rotation={[0.44, 0, 0.16]}>
           <cylinderGeometry args={[0.44, 0.15, 0.8, 8, 1, true]} />
           <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} side={THREE.DoubleSide} />
@@ -490,7 +593,7 @@ export function ProcessingHall() {
         </mesh>
       </group>
 
-      {/* gear-motor driving the girth gear â€” pinion guard, motor barrel, and a
+      {/* gear-motor driving the girth gear — pinion guard, motor barrel, and a
           bracket back to the near cradle; sits in the drum's front-lower curve */}
       <group position={[-1.12, -0.72, 0.82]}>
         <mesh>
@@ -535,9 +638,9 @@ export function ProcessingHall() {
 }
 
 // ---------------------------------------------------------------------------
-// 03 â€” Storage Vault : a medallion rack, bronze / silver / gold tiers
+// 03 — Storage Vault : a medallion rack, bronze / silver / gold tiers
 // ---------------------------------------------------------------------------
-// the medallion colour is an edge/label accent, not the whole module â€”
+// the medallion colour is an edge/label accent, not the whole module —
 // modules are dark steel, the tier reads from the trim. Each tier also
 // carries its data-lifecycle character: bronze = raw (bolted, sparse LEDs),
 // silver = refined (standard, pulled out for a read), gold = curated (a lit
@@ -642,7 +745,7 @@ export function StorageVault() {
               <meshBasicMaterial color={PALETTE.amberBright} toneMapped={false} />
             </mesh>
           )}
-          {/* tier light bar â€” the medallion colour as glow */}
+          {/* tier light bar — the medallion colour as glow */}
           <mesh position={[0, 0.3, 0.63]}>
             <boxGeometry args={[2.0, 0.06, 0.03]} />
             <meshStandardMaterial color={tier.trim} emissive={tier.trim} emissiveIntensity={tier.crown ? 1.5 : 1} toneMapped={false} />
@@ -656,7 +759,7 @@ export function StorageVault() {
             <boxGeometry args={[1.9, 0.52, 0.06]} />
             <meshStandardMaterial {...cast('dark', { roughness: 0.62 })} />
           </mesh>
-          {/* raw tier is bolted shut â€” a row of heads across the face */}
+          {/* raw tier is bolted shut — a row of heads across the face */}
           {tier.bolts &&
             [-0.8, -0.4, 0, 0.4, 0.8].map((x) => (
               <mesh key={x} position={[x, 0.3, 0.64]} rotation={[Math.PI / 2, 0, 0]}>
@@ -664,7 +767,7 @@ export function StorageVault() {
                 <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
               </mesh>
             ))}
-          {/* status LEDs â€” full amber bank on gold, sparser blues below:
+          {/* status LEDs — full amber bank on gold, sparser blues below:
               VaultCells, below */}
           {/* handle */}
           <mesh position={[0, 0.34, 0.66]}>
@@ -673,6 +776,25 @@ export function StorageVault() {
           </mesh>
         </group>
       ))}
+
+      {/* a loom of cables up the left upright's outside, clamped every so
+          often, into an entry box at the top under the junction box */}
+      {[-0.26, -0.22, -0.18, -0.14].map((z, i) => (
+        <mesh key={z} position={[-1.33 - (i % 2) * 0.012, 1.5, z]}>
+          <cylinderGeometry args={[0.017, 0.017, 3.95, 6]} />
+          <meshStandardMaterial {...CABLE} />
+        </mesh>
+      ))}
+      {[0.1, 0.9, 1.7, 2.5, 3.2].map((y) => (
+        <mesh key={y} position={[-1.335, y, -0.2]}>
+          <boxGeometry args={[0.06, 0.03, 0.2]} />
+          <meshStandardMaterial {...steel('light', { roughness: 0.35 })} />
+        </mesh>
+      ))}
+      <mesh position={[-1.34, 3.47, -0.2]}>
+        <boxGeometry args={[0.07, 0.12, 0.22]} />
+        <meshStandardMaterial {...cast('dark', { roughness: 0.6 })} />
+      </mesh>
 
       {/* facility conduit up the left side, branching into each tier */}
       <mesh position={[-1.36, 1.4, 0.12]}>
@@ -751,7 +873,7 @@ function Shuttle() {
 }
 
 // ---------------------------------------------------------------------------
-// 04 â€” Control Room : a video wall of live monitors over a manned console
+// 04 — Control Room : a video wall of live monitors over a manned console
 // ---------------------------------------------------------------------------
 
 // The left wing's two bar charts, all twelve bars in one instanced mesh: the
@@ -796,6 +918,53 @@ function ChartBars() {
       <boxGeometry args={[0.16, 1, 0.02]} />
       <meshBasicMaterial toneMapped={false} />
     </instancedMesh>
+  );
+}
+
+// A loudspeaker on the front of each of the video wall's side posts, angled
+// down at the desk, and a security camera under the valance's right end
+// watching it. In the control room's own frame (ControlRoom).
+function RoomFittings() {
+  return (
+    <group>
+      {[-1, 1].map((s) => (
+        <group key={s} position={[s * 3.55, 1.05, 0.36]} rotation={[0.22, -s * 0.25, 0]}>
+          <mesh>
+            <boxGeometry args={[0.22, 0.34, 0.14]} />
+            <meshStandardMaterial {...cast('dark', { roughness: 0.6 })} />
+          </mesh>
+          {[
+            [-0.05, 0.075],
+            [0.1, 0.03],
+          ].map(([y, r]) => (
+            <mesh key={y} position={[0, y, 0.072]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[r, r, 0.01, 16]} />
+              <meshStandardMaterial color="#0d1116" metalness={0.2} roughness={0.8} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      <group position={[3.25, 1.62, 0.22]}>
+        <mesh position={[0, 0.05, 0]}>
+          <boxGeometry args={[0.05, 0.12, 0.05]} />
+          <meshStandardMaterial {...steel('dark', { roughness: 0.45 })} />
+        </mesh>
+        <group rotation={[0.45, 0.5, 0]}>
+          <mesh position={[0, -0.04, 0.08]}>
+            <boxGeometry args={[0.12, 0.09, 0.26]} />
+            <meshStandardMaterial {...steel('light', { roughness: 0.35 })} />
+          </mesh>
+          <mesh position={[0, -0.04, 0.215]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.02, 12]} />
+            <meshStandardMaterial color="#0d1116" metalness={0.5} roughness={0.3} />
+          </mesh>
+          <mesh position={[0.045, 0.005, 0.2]}>
+            <sphereGeometry args={[0.008, 6, 4]} />
+            <meshBasicMaterial color={PALETTE.amber} toneMapped={false} />
+          </mesh>
+        </group>
+      </group>
+    </group>
   );
 }
 
@@ -853,15 +1022,11 @@ export function ControlRoom() {
   const wave = useRef();
   const ticker = useRef();
   const blip = useRef();
-  const wash = useRef();
   useFrame(() => {
     const t = flow.t;
     // the light under the valance turns green as each batch passes the checks
-    if (wash.current) {
-      const ok = batchPulse(CHECKS);
-      wash.current.material.emissive.copy(WATCHING).lerp(PASSED, ok);
-      wash.current.material.emissiveIntensity = 0.65 + 1.3 * ok;
-    }
+    const ok = batchPulse(CHECKS);
+    setPulse(PULSE.controlWash, washGlow.copy(WATCHING).lerp(PASSED, ok), 0.65 + 1.3 * ok);
     if (wave.current) {
       const pos = wave.current.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -893,13 +1058,15 @@ export function ControlRoom() {
           <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
         </mesh>
       ))}
+      <RoomFittings />
+
       {/* under-valance light wash, a little deeper so its flash carries */}
-      <mesh userData={LIVE} ref={wash} position={[0, 1.6, 0.26]}>
+      <mesh userData={{ pulse: PULSE.controlWash }} position={[0, 1.6, 0.26]}>
         <boxGeometry args={[6.7, 0.07, 0.05]} />
         <meshStandardMaterial color={PALETTE.blueBright} emissive={PALETTE.blueBright} emissiveIntensity={0.65} toneMapped={false} />
       </mesh>
 
-      {/* centre: primary readout â€” big figure, sparkline, scrolling ticker */}
+      {/* centre: primary readout — big figure, sparkline, scrolling ticker */}
       <group position={[0, 0.4, 0.16]}>
         <Screen w={2.5} h={1.66} color="#0c2f45" intensity={0.62}>
           {/* big segmented figure, top-left */}
@@ -917,7 +1084,7 @@ export function ControlRoom() {
             <planeGeometry args={[0.32, 0.32]} />
             <meshBasicMaterial color={PALETTE.green} toneMapped={false} />
           </mesh>
-          {/* sparkline â€” a connected-looking run of steps */}
+          {/* sparkline — a connected-looking run of steps */}
           {Array.from({ length: 12 }, (_, i) => (
             <mesh key={i} position={[-0.74 + i * 0.13, -0.04 + Math.sin(i * 0.8) * 0.13, 0.02]}>
               <boxGeometry args={[0.13, 0.035, 0.01]} />
@@ -1052,7 +1219,7 @@ export function ControlRoom() {
 }
 
 // ---------------------------------------------------------------------------
-// 05 â€” Shipping Dock : refined data packed into containers and run out the gate
+// 05 — Shipping Dock : refined data packed into containers and run out the gate
 // ---------------------------------------------------------------------------
 
 // A freight container: railed body, corner posts, a door end, a placard.
@@ -1166,10 +1333,158 @@ function Bollard(props) {
   );
 }
 
+// A forklift parked at the loading platform's front corner, forks down: it
+// brings the containers up to the belt. In profile from the Contact stop,
+// where its mast and overhead guard read. `position` is the floor under its
+// middle. It faces +x, forks first.
+const TYRE = { color: '#15181c', metalness: 0.1, roughness: 0.9 };
+
+function Forklift(props) {
+  const guard = steel('dark', { roughness: 0.45 });
+  return (
+    <group {...props}>
+      {/* body, and the counterweight at the back */}
+      <mesh position={[-0.05, 0.42, 0]}>
+        <boxGeometry args={[1.5, 0.5, 1.0]} />
+        <meshStandardMaterial {...SAFETY} />
+      </mesh>
+      <mesh position={[-0.82, 0.5, 0]}>
+        <boxGeometry args={[0.36, 0.66, 1.04]} />
+        <meshStandardMaterial {...cast('dark')} />
+      </mesh>
+      {/* drive wheels under the mast, steer wheels under the weight, each
+          with its hub */}
+      {[
+        [0.45, 0.24],
+        [-0.55, 0.2],
+      ].flatMap(([x, r]) =>
+        [-1, 1].map((s) => (
+          <group key={`${x}:${s}`} position={[x, r, s * 0.43]} rotation={[Math.PI / 2, 0, 0]}>
+            <mesh>
+              <cylinderGeometry args={[r, r, 0.2, 16]} />
+              <meshStandardMaterial {...TYRE} />
+            </mesh>
+            <mesh>
+              <cylinderGeometry args={[r * 0.45, r * 0.45, 0.21, 10]} />
+              <meshStandardMaterial {...steel('light', { roughness: 0.35 })} />
+            </mesh>
+          </group>
+        )),
+      )}
+      {/* seat, and the steering column with its wheel */}
+      <mesh position={[-0.38, 0.75, 0]}>
+        <boxGeometry args={[0.42, 0.12, 0.46]} />
+        <meshStandardMaterial {...cast('dark', { roughness: 0.7 })} />
+      </mesh>
+      <mesh position={[-0.58, 0.98, 0]} rotation={[0, 0, 0.12]}>
+        <boxGeometry args={[0.08, 0.42, 0.44]} />
+        <meshStandardMaterial {...cast('dark', { roughness: 0.7 })} />
+      </mesh>
+      <group position={[0.12, 0.86, 0]} rotation={[0, 0, 0.5]}>
+        <mesh>
+          <cylinderGeometry args={[0.025, 0.025, 0.44, 8]} />
+          <meshStandardMaterial {...guard} />
+        </mesh>
+        <mesh position={[0, 0.22, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.15, 0.018, 6, 20]} />
+          <meshStandardMaterial {...cast('dark')} />
+        </mesh>
+      </group>
+      {/* overhead guard: four posts and a slatted roof, a beacon at its back */}
+      {[0.42, -0.62].flatMap((x) =>
+        [-1, 1].map((s) => (
+          <mesh key={`${x}:${s}`} position={[x, 1.32, s * 0.44]}>
+            <boxGeometry args={[0.05, 1.3, 0.05]} />
+            <meshStandardMaterial {...guard} />
+          </mesh>
+        )),
+      )}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[-0.1, 1.98, s * 0.44]}>
+          <boxGeometry args={[1.12, 0.05, 0.05]} />
+          <meshStandardMaterial {...guard} />
+        </mesh>
+      ))}
+      {[-0.6, -0.35, -0.1, 0.15, 0.4].map((x) => (
+        <mesh key={x} position={[x, 1.98, 0]}>
+          <boxGeometry args={[0.05, 0.04, 0.92]} />
+          <meshStandardMaterial {...guard} />
+        </mesh>
+      ))}
+      <mesh position={[-0.5, 2.0, 0]}>
+        <sphereGeometry args={[0.05, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshBasicMaterial color={PALETTE.amber} toneMapped={false} />
+      </mesh>
+      {/* the mast, its tilt rams, the carriage with its load backrest, and
+          the forks, lowered to the floor */}
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          <mesh position={[0.8, 1.07, s * 0.3]}>
+            <boxGeometry args={[0.07, 2.1, 0.08]} />
+            <meshStandardMaterial {...guard} />
+          </mesh>
+          <mesh position={[0.69, 0.8, s * 0.38]} rotation={[0, 0, -0.42]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.45, 8]} />
+            <meshStandardMaterial {...steel('light', { roughness: 0.3 })} />
+          </mesh>
+          <mesh position={[0.9, 0.22, s * 0.25]}>
+            <boxGeometry args={[0.05, 0.4, 0.1]} />
+            <meshStandardMaterial {...steel('steel', { roughness: 0.4 })} />
+          </mesh>
+          <mesh position={[1.38, 0.03, s * 0.25]}>
+            <boxGeometry args={[1.0, 0.04, 0.1]} />
+            <meshStandardMaterial {...steel('steel', { roughness: 0.4 })} />
+          </mesh>
+        </group>
+      ))}
+      {[2.12, 0.25].map((y) => (
+        <mesh key={y} position={[0.8, y, 0]}>
+          <boxGeometry args={[0.07, 0.07, 0.68]} />
+          <meshStandardMaterial {...guard} />
+        </mesh>
+      ))}
+      <mesh position={[0.86, 0.36, 0]}>
+        <boxGeometry args={[0.05, 0.42, 0.84]} />
+        <meshStandardMaterial {...guard} />
+      </mesh>
+      {[-0.3, 0, 0.3].map((z) => (
+        <mesh key={z} position={[0.87, 0.8, z]}>
+          <boxGeometry args={[0.03, 0.5, 0.03]} />
+          <meshStandardMaterial {...guard} />
+        </mesh>
+      ))}
+      <mesh position={[0.87, 1.05, 0]}>
+        <boxGeometry args={[0.03, 0.03, 0.84]} />
+        <meshStandardMaterial {...guard} />
+      </mesh>
+    </group>
+  );
+}
+
+// An empty pallet: deck boards across three runners. `position` is its foot.
+const WOOD = { color: '#4a3a28', metalness: 0, roughness: 0.9 };
+
+function Pallet(props) {
+  return (
+    <group {...props}>
+      {[-0.45, 0, 0.45].map((z) => (
+        <mesh key={z} position={[0, 0.045, z]}>
+          <boxGeometry args={[1.2, 0.09, 0.1]} />
+          <meshStandardMaterial {...WOOD} />
+        </mesh>
+      ))}
+      {[-0.5, -0.25, 0, 0.25, 0.5].map((x) => (
+        <mesh key={x} position={[x, 0.105, 0]}>
+          <boxGeometry args={[0.14, 0.03, 1.0]} />
+          <meshStandardMaterial {...WOOD} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 export function ShippingDock() {
   const crate = useRef();
-  const beacon = useRef();
-  const gate = useRef();
   const shutter = useRef();
   const rail = useRef();
   const belt = useRef();
@@ -1224,13 +1539,11 @@ export function ShippingDock() {
     // brighter as the door clears it: more of the sky in view. Past 1 it
     // stays white and the extra goes into the glow round the doorway, which
     // is what carries through the scrim over the scene.
-    if (gate.current) gate.current.material.emissiveIntensity = 0.9 + 2.1 * open;
+    setPulse(PULSE.gateDaylight, DAYLIGHT, 0.9 + 2.1 * open);
     // the beacon pulses while the door is on its way up or down, most of all
     // halfway, and glows steady once it's open
-    if (beacon.current) {
-      const moving = 4 * open * (1 - open);
-      beacon.current.material.emissiveIntensity = 0.25 + 0.9 * open + 2.2 * moving * (0.5 + 0.5 * Math.sin(t * 7));
-    }
+    const moving = 4 * open * (1 - open);
+    setPulse(PULSE.gateBeacon, AMBER, 0.25 + 0.9 * open + 2.2 * moving * (0.5 + 0.5 * Math.sin(t * 7)));
   });
 
   return (
@@ -1244,6 +1557,15 @@ export function ShippingDock() {
       <HazardStripes w={3.4} h={0.26} position={[0, -1.275, 1.6]} />
       {[-2.05, 2.05].map((x) => (
         <Bollard key={x} position={[x, -1.5, 1.85]} />
+      ))}
+
+      {/* the forklift that loads the platform, parked beside it with its
+          forks turned a little toward the hall, and a stack of empty pallets
+          off to its left (from the Contact stop, behind it they read as a
+          load on its roof) */}
+      <Forklift position={[-4.4, -1.5, 0.5]} rotation={[0, -0.3, 0]} />
+      {[0, 0.12, 0.24].map((y, i) => (
+        <Pallet key={y} position={[-6.4, -1.5 + y, -1.2]} rotation={[0, (i - 1) * 0.05, 0]} />
       ))}
       {[-1.72, 1.72].map((x) => (
         <mesh key={x} position={[x, -1.0, -1.5]}>
@@ -1282,7 +1604,7 @@ export function ShippingDock() {
           <boxGeometry args={[1.62, 0.05, 5.8]} />
           <meshStandardMaterial color="#20272f" metalness={0.3} roughness={0.8} />
         </mesh>
-        {/* travelling belt cleats â€” the group slides one slot then wraps */}
+        {/* travelling belt cleats — the group slides one slot then wraps */}
         <group userData={LIVE} ref={belt} position={[0, -0.82, -4.1]}>
           <StaticBatch extend={SUNLIT}>
             {Array.from({ length: 13 }, (_, i) => (
@@ -1319,7 +1641,7 @@ export function ShippingDock() {
           <boxGeometry args={[3.9, 4.0, 0.4]} />
           <meshStandardMaterial {...cast('dark')} />
         </mesh>
-        {/* frame â€” four bars around the opening */}
+        {/* frame — four bars around the opening */}
         {[
           [0, 1.66, 3.9, 0.7],
           [0, -1.66, 3.9, 0.7],
@@ -1332,7 +1654,7 @@ export function ShippingDock() {
           </mesh>
         ))}
         {/* the daylight outside, filling the doorway */}
-        <mesh userData={LIVE} ref={gate} position={[0, 0, -0.1]}>
+        <mesh userData={{ pulse: PULSE.gateDaylight }} position={[0, 0, -0.1]}>
           <planeGeometry args={[2 * OPENING_HALF, 2 * OPENING_TOP]} />
           <meshStandardMaterial color="#000000" emissive={DAYLIGHT} emissiveIntensity={0.9} toneMapped={false} />
         </mesh>
@@ -1373,10 +1695,37 @@ export function ShippingDock() {
           <cylinderGeometry args={[0.075, 0.075, 0.05, 12]} />
           <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
         </mesh>
-        <mesh userData={LIVE} ref={beacon} position={[1.32, 2.54, 0]}>
+        <mesh userData={{ pulse: PULSE.gateBeacon }} position={[1.32, 2.54, 0]}>
           <sphereGeometry args={[0.07, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshStandardMaterial color={PALETTE.amber} emissive={PALETTE.amber} emissiveIntensity={0.25} toneMapped={false} />
         </mesh>
+
+        {/* a dock light on a swing arm from the right jamb, its lamp turned
+            down onto the head of the belt */}
+        <group position={[1.75, 0.65, 0.31]}>
+          <mesh position={[0, 0, 0.02]}>
+            <boxGeometry args={[0.14, 0.22, 0.04]} />
+            <meshStandardMaterial {...steel('dark', { roughness: 0.5 })} />
+          </mesh>
+          <group rotation={[0, -0.75, 0]}>
+            <mesh position={[0, 0, 0.3]}>
+              <boxGeometry args={[0.05, 0.05, 0.56]} />
+              <meshStandardMaterial {...steel('dark', { roughness: 0.45 })} />
+            </mesh>
+            <group position={[0, -0.02, 0.6]} rotation={[0.9, 0, 0]}>
+              {/* closed, so it shares the batch's one-sided finish: an open
+                  shell would need a two-sided one, and a draw call of its own */}
+              <mesh>
+                <cylinderGeometry args={[0.07, 0.1, 0.14, 14]} />
+                <meshStandardMaterial {...steel('steel', { roughness: 0.4 })} />
+              </mesh>
+              <mesh position={[0, -0.06, 0]}>
+                <cylinderGeometry args={[0.085, 0.085, 0.01, 14]} />
+                <meshBasicMaterial color={PALETTE.amberBright} toneMapped={false} />
+              </mesh>
+            </group>
+          </group>
+        </group>
 
         {/* the door's push-button station on the right jamb */}
         <group position={[1.6, -0.2, 0.31]}>
@@ -1548,7 +1897,7 @@ function usePoolTexture() {
 
 export function Stations() {
   // All five machines mount once, at load (with Warmup in Scene.jsx compiling
-  // their shaders then) â€” building one mid-scroll cost a ~400ms frame. Only the
+  // their shaders then) — building one mid-scroll cost a ~400ms frame. Only the
   // focused machine and its neighbours are drawn (`visible`); the rest sit
   // hidden, which costs nothing to render. Only the machine in focus floats,
   // and never the shipping dock: it's built into the hall's end wall

@@ -580,15 +580,20 @@ function Effects({ full }) {
 // a second instead of 60. That's most of a visit (someone reading), and the
 // scene is slow and ambient enough to look the same at 30: the belt, the
 // drum, the blinking lights. It halves the work meanwhile, which is battery
-// on a phone and fan noise on a laptop. Any input brings 60 back at once.
+// on a phone and fan noise on a laptop. After a minute of that (a long read,
+// a tab left open on the desk) it eases to 15, a quarter of the work, where
+// the belt moves a little more steppily. Any input brings 60 back at once.
 const FRAME_MS = 1000 / 60;
 const IDLE_FRAME_MS = 1000 / 30;
 const IDLE_AFTER = 2500;
+const LONG_IDLE_FRAME_MS = 1000 / 15;
+const LONG_IDLE_AFTER = 60_000;
 const INPUTS = ['pointermove', 'pointerdown', 'wheel', 'touchstart', 'keydown'];
 
-// When the last frame was drawn at the idle pace. PerformanceMonitor would
-// read those 30 fps as a device that can't keep up and start cutting quality,
-// so Quality ignores what it reports for a while after (see IDLE_BLIND_MS).
+// When the last frame was drawn at an idle pace. PerformanceMonitor would
+// read those 30 or 15 fps as a device that can't keep up and start cutting
+// quality, so Quality ignores what it reports for a while after (see
+// IDLE_BLIND_MS).
 const pace = { lastIdleFrame: -Infinity };
 
 function FrameDriver() {
@@ -600,7 +605,8 @@ function FrameDriver() {
     let lastInput = performance.now();
     const loop = (t) => {
       raf = requestAnimationFrame(loop);
-      const frameMs = t - lastInput > IDLE_AFTER ? IDLE_FRAME_MS : FRAME_MS;
+      const quiet = t - lastInput;
+      const frameMs = quiet > LONG_IDLE_AFTER ? LONG_IDLE_FRAME_MS : quiet > IDLE_AFTER ? IDLE_FRAME_MS : FRAME_MS;
       // 1.5ms of slack, so a 60Hz screen's jitter never skips a frame
       if (t < next - 1.5) return;
       // on time: the next slot is one frame on. Fallen behind (a stall, a
@@ -609,7 +615,7 @@ function FrameDriver() {
       const state = get();
       // 'never' while nothing may be drawn: Warmup, or Quality's hold
       if (state.frameloop === 'never') return;
-      if (frameMs === IDLE_FRAME_MS) pace.lastIdleFrame = t;
+      if (frameMs !== FRAME_MS) pace.lastIdleFrame = t;
       state.advance(t);
     };
     // input clears the slot too, so the first frame back isn't held to the

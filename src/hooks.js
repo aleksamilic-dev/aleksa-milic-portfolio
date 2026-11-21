@@ -29,22 +29,20 @@ const TIER_OVERRIDE = new URLSearchParams(
 
 // What the hardware can do. Fixed for the session and every input is
 // synchronous, so this can run before the first paint.
+//
+// three r0.171 is WebGL2-only, so a browser without it (or a genuinely weak
+// device) gets the static 2D backdrop: there's no lighter 3D path to offer.
+// Whether the browser has WebGL2 at all is a free check. Whether this device
+// will actually hand out a context is only known by asking for one, and
+// that's left to the scene: if its renderer can't get one, App's boundary
+// falls back to the flat backdrop. This used to ask with a throwaway canvas
+// before the first render, then the scene asked again, and making that first
+// context was a third of the page's first long task on a mid-range phone.
 function detectCapability() {
-  if (typeof document === 'undefined') return 'full';
-
-  let gl = null;
-  try {
-    gl = document.createElement('canvas').getContext('webgl2');
-  } catch {
-    gl = null;
-  }
+  if (typeof window === 'undefined') return 'full';
   const cores = navigator.hardwareConcurrency || 8;
   const mem = navigator.deviceMemory || 8;
-
-  // three r0.171 is WebGL2-only, so no context (or a genuinely weak device)
-  // means the static 2D backdrop — there's no lighter 3D path to offer.
-  if (!gl || cores <= 2 || mem <= 2) return 'flat';
-  gl.getExtension('WEBGL_lose_context')?.loseContext();
+  if (typeof window.WebGL2RenderingContext === 'undefined' || cores <= 2 || mem <= 2) return 'flat';
 
   // modest laptops get the stripped scene, the rest full.
   return cores <= 4 || mem <= 4 ? 'lite' : 'full';

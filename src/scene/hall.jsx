@@ -10,9 +10,10 @@ import { DUCT, TAPS, TRAY } from './services.js';
 // roof down to the floor, purlins along the roof, painted floor markings,
 // and a doorway into each zone with its name over it. Then its services: the
 // duct the raw data comes in by, the control room's cable tray out to every
-// machine (services.js), and a pipe, a conduit and electrical panels along
-// the walls. All of it static, so it goes in with the rest of the facility
-// under <StaticBatch> (scene/batch.jsx) and costs a handful of draw calls.
+// machine (services.js), and a pipe, a conduit, electrical panels and exit
+// doors along the walls. All of it static, so it goes in with the rest of
+// the facility under <StaticBatch> (scene/batch.jsx) and costs a handful of
+// draw calls.
 //
 // The hall runs down -z from the entrance at HALL.front to the end wall at
 // HALL.back, just behind the shipping gate. The roof trusses sit every BAY
@@ -227,6 +228,34 @@ function FloorMarkings({ doors }) {
   );
 }
 
+// Painted on the walkway each side, an arrow in every zone, a little ahead
+// of its machine, pointing down the hall the way the data goes.
+const ARROWS = [3, -13, -29, -45, -61];
+
+function FlowArrows() {
+  const x = (LANE[0] + LANE[1]) / 2;
+  return (
+    <group>
+      {ARROWS.flatMap((z) =>
+        [-1, 1].map((s) => (
+          // laid flat, local y runs down the hall (-z)
+          <group key={`${s}:${z}`} position={[s * x, HALL.floor + 0.026, z]} rotation={[-Math.PI / 2, 0, 0]}>
+            <mesh position={[0, -0.15, 0]}>
+              <planeGeometry args={[0.16, 0.6]} />
+              <meshStandardMaterial {...PAINT} />
+            </mesh>
+            {/* the head: a triangle, its point down the hall */}
+            <mesh position={[0, 0.3, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <circleGeometry args={[0.3, 3]} />
+              <meshStandardMaterial {...PAINT} />
+            </mesh>
+          </group>
+        )),
+      )}
+    </group>
+  );
+}
+
 // --- zone doorways ----------------------------------------------------------
 // Between each machine and the next, a heavier portal frame across the hall,
 // with a lit strip in the next zone's colour along its header and a sign
@@ -395,6 +424,42 @@ function LitStrips({ trusses, doors }) {
       <boxGeometry args={[1, 1, 1]} />
       <meshBasicMaterial toneMapped={false} />
     </instancedMesh>
+  );
+}
+
+// The fittings the truss strips sit in: a steel housing fixed to the
+// underside of the truss, with a lip down each long side and an end cap, so
+// each strip reads as a lamp hung from the roof rather than a lit bar in
+// the air. The housing fills the gap between the strip and the truss.
+const FITTING = { w: 3.5, d: 0.42 };
+const fitting = steel('steel', { roughness: 0.4 });
+
+function StripFittings({ trusses }) {
+  const top = 5.1 - 0.065; // the trusses' underside (Facility in scene/Scene.jsx)
+  const stripTop = 4.94 + 0.025;
+  return (
+    <group>
+      {trusses.filter((z) => z > HALL.back).map((z) => (
+        <group key={z} position={[0, 0, z]}>
+          <mesh position={[0, (top + stripTop) / 2, 0]}>
+            <boxGeometry args={[FITTING.w, top - stripTop, FITTING.d]} />
+            <meshStandardMaterial {...fitting} />
+          </mesh>
+          {[-1, 1].map((s) => (
+            <mesh key={`lip${s}`} position={[0, 4.95, (s * (FITTING.d - 0.02)) / 2]}>
+              <boxGeometry args={[FITTING.w, 0.06, 0.02]} />
+              <meshStandardMaterial {...fitting} />
+            </mesh>
+          ))}
+          {[-1, 1].map((s) => (
+            <mesh key={`end${s}`} position={[(s * (FITTING.w - 0.02)) / 2, 4.96, 0]}>
+              <boxGeometry args={[0.02, 0.08, FITTING.d]} />
+              <meshStandardMaterial {...fitting} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
   );
 }
 
@@ -754,6 +819,62 @@ function WallServices({ trusses }) {
   );
 }
 
+// --- exit doors ---------------------------------------------------------------
+// A personnel door in each side wall here and there, in a framed opening,
+// with a push bar and its green exit sign lit over it. In bays without an
+// electrical panel on that side (WallServices) and clear of the doorways.
+const EXITS = [
+  { side: -1, z: -19 },
+  { side: -1, z: -43 },
+  { side: 1, z: -13 },
+  { side: 1, z: -49 },
+];
+const EXIT = { w: 0.95, h: 2.1 };
+
+function ExitDoors() {
+  return (
+    <group>
+      {EXITS.map(({ side: s, z }) => {
+        const at = (out) => s * (HALL.wall - out);
+        const top = HALL.floor + EXIT.h;
+        return (
+          <group key={`${s}:${z}`}>
+            {/* the frame: two jambs and a head */}
+            {[-1, 1].map((e) => (
+              <mesh key={e} position={[at(0.04), HALL.floor + EXIT.h / 2, z + e * (EXIT.w / 2 + 0.04)]}>
+                <boxGeometry args={[0.08, EXIT.h, 0.08]} />
+                <meshStandardMaterial {...frame} />
+              </mesh>
+            ))}
+            <mesh position={[at(0.04), top + 0.04, z]}>
+              <boxGeometry args={[0.08, 0.08, EXIT.w + 0.16]} />
+              <meshStandardMaterial {...frame} />
+            </mesh>
+            {/* the door and its push bar */}
+            <mesh position={[at(0.02), HALL.floor + EXIT.h / 2, z]}>
+              <boxGeometry args={[0.03, EXIT.h, EXIT.w]} />
+              <meshStandardMaterial color="#25303a" metalness={0.4} roughness={0.55} />
+            </mesh>
+            <mesh position={[at(0.05), HALL.floor + 1.0, z]}>
+              <boxGeometry args={[0.03, 0.05, EXIT.w * 0.75]} />
+              <meshStandardMaterial {...steel('light', { roughness: 0.35 })} />
+            </mesh>
+            {/* the exit sign over it */}
+            <mesh position={[at(0.05), top + 0.3, z]}>
+              <boxGeometry args={[0.08, 0.2, 0.42]} />
+              <meshStandardMaterial {...frame} />
+            </mesh>
+            <mesh position={[at(0.095), top + 0.3, z]}>
+              <boxGeometry args={[0.004, 0.15, 0.36]} />
+              <meshBasicMaterial color={PALETTE.green} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 // --- column feet --------------------------------------------------------------
 // Where each column stands on the floor: a base plate with an anchor bolt at
 // each corner, and its foot painted in two bands of safety ochre, as columns
@@ -833,10 +954,13 @@ export function Hall({ trusses }) {
       <Columns trusses={trusses} />
       <ColumnFeet columns={columns} />
       <FloorMarkings doors={DOOR_LINES} />
+      <FlowArrows />
       <ZoneDoors doors={DOORS} />
       <LitStrips trusses={trusses} doors={DOORS} />
+      <StripFittings trusses={trusses} />
       <Purlins />
       <WallServices trusses={trusses} />
+      <ExitDoors />
       <IntakeDuct trusses={trusses} />
       <CableTray trusses={trusses} />
     </group>
