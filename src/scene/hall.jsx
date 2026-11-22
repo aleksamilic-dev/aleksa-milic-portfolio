@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { PALETTE, STATION_GAP, ZONE_COLORS, ZONE_NAMES } from '../data.js';
 import { LATE } from './batch.jsx';
+import { fontReady, makeCanvas } from './page.js';
 import { SAFETY, cast, steel } from './primitives.jsx';
 import { DUCT, TAPS, TRAY } from './services.js';
 
@@ -59,9 +60,7 @@ function useWindowTexture() {
   return useMemo(() => {
     const W = 192;
     const H = 256;
-    const c = document.createElement('canvas');
-    c.width = W;
-    c.height = H;
+    const c = makeCanvas(W, H);
     const g = c.getContext('2d');
     g.fillStyle = WALL_COLOR;
     g.fillRect(0, 0, W, H);
@@ -281,9 +280,7 @@ function useSignAtlas(zones) {
   const draw = useMemo(() => {
     const W = 512;
     const ROW = 128;
-    const c = document.createElement('canvas');
-    c.width = W;
-    c.height = ROW * zones.length;
+    const c = makeCanvas(W, ROW * zones.length);
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
@@ -318,11 +315,12 @@ function useSignAtlas(zones) {
   }, [zones]);
 
   // Drawn at once with whatever font is ready, then again once DM Mono has
-  // loaded (the page itself uses it, so that's usually immediate).
+  // loaded (the page itself uses it, so that's usually immediate; in the
+  // scene's worker it's worker.js that loads it).
   useLayoutEffect(() => {
     draw.paint();
     let live = true;
-    document.fonts?.load('500 50px "DM Mono"').then(() => live && draw.paint(), () => {});
+    fontReady('500 50px "DM Mono"').then(() => live && draw.paint(), () => {});
     return () => {
       live = false;
     };

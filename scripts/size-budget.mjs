@@ -3,7 +3,10 @@
 // budget is broken, so a change can't quietly make the page slower to start:
 // `page` is what every visitor loads before anything else (the HUD and
 // React), `scene` the 3D (three.js, r3f and drei, the glow passes, the
-// scene's own code), which phones and laptops load on top.
+// scene's own code), which phones and laptops load on top. The scene comes in
+// two copies, and a visitor loads one: `scene` is the scene's worker's, the
+// w- files (WorkerScene.jsx), what nearly every browser gets, and
+// `scene-on-page` the page's own, for the browsers whose workers can't draw.
 //
 // The budgets sit a few percent above what the site weighs now. When a
 // change really needs more, raise the budget in the same commit, so the
@@ -14,7 +17,8 @@ import { gzipSync } from 'node:zlib';
 
 const BUDGETS = {
   page: { kb: 64, chunks: [/^index-/, /^vendor-/] },
-  scene: { kb: 305, chunks: [/^three-/, /^r3f-/, /^postfx-/, /^Scene-/, /^stations-/] },
+  scene: { kb: 305, chunks: [/^w-/] },
+  'scene-on-page': { kb: 305, chunks: [/^three-/, /^r3f-/, /^postfx-/, /^Scene-/, /^stations-/] },
 };
 
 const files = readdirSync('docs/assets').filter((f) => f.endsWith('.js'));

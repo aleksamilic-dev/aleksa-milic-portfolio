@@ -193,37 +193,32 @@ a {
   transition-duration: 0.35s;
 }
 
-/* light, even wash over the 3D — enough to seat the hero copy; the content
-   sections below carry their own (semi-transparent) surface so the factory
-   still drifts visibly behind them */
-.canvas-wrap::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(8, 11, 16, 0.32) 0, rgba(8, 11, 16, 0.46) 100%);
-}
+/* The scrims over the backdrop: a light, even wash (`--wash`), enough to seat
+   the hero copy, and a darker band under the topbar and along the bottom so
+   the chrome stays legible. The content sections below carry their own
+   semi-transparent surface, so the factory still drifts visibly behind them.
 
-/* top + bottom vignette so chrome stays legible */
-.app::after {
+   Over the 3D, the scene paints these itself in its last pass (Scrim in
+   scene/Scene.jsx, which marks the wrap [data-scrim] while it does), the same
+   colours blended the same way. As page layers over a canvas that changes
+   every frame, the browser had to blend two extra full-screen layers at the
+   screen's full resolution into every frame. This one shows before the
+   scene's first frame, behind the flat backdrop, and if the scene ever drops
+   its glow passes. */
+.canvas-wrap::after {
+  --wash: linear-gradient(180deg, rgba(8, 11, 16, 0.32) 0, rgba(8, 11, 16, 0.46) 100%);
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(8, 11, 16, 0.55), transparent 16%),
-    linear-gradient(0deg, rgba(8, 11, 16, 0.6), transparent 20%);
+    linear-gradient(0deg, rgba(8, 11, 16, 0.6), transparent 20%),
+    var(--wash);
 }
 
-.grain {
-  position: fixed;
-  inset: 0;
-  z-index: 95;
-  pointer-events: none;
-  opacity: 0.22;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E");
+.canvas-wrap[data-scrim]::after {
+  display: none;
 }
 
 /* ===========================================================================
@@ -1858,7 +1853,7 @@ a.cert:hover .cert__ext {
    App.jsx: this is "what's behind the copy", which a reduced-motion visitor on
    a wide desktop answers differently from data-tier. */
 .app[data-backdrop='flat'] .canvas-wrap::after {
-  background: linear-gradient(180deg, rgba(8, 11, 16, 0.1) 0, rgba(8, 11, 16, 0.24) 100%);
+  --wash: linear-gradient(180deg, rgba(8, 11, 16, 0.1) 0, rgba(8, 11, 16, 0.24) 100%);
 }
 
 .app[data-backdrop='flat'] .section--hero::before {

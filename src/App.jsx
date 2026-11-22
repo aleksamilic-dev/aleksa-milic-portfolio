@@ -4,10 +4,13 @@ import { useDeviceTier, useMediaQuery } from './hooks.js';
 import HUD from './ui/HUD.jsx';
 import Fallback from './ui/Fallback.jsx';
 import StructuredData from './ui/StructuredData.jsx';
+import WorkerScene, { canDrawInWorker } from './scene/WorkerScene.jsx';
 
 // three + drei + postprocessing are heavy; keep them out of the initial
 // bundle so the HUD paints immediately. The 3D is ambient backdrop only —
-// the page is fully readable before (and without) it.
+// the page is fully readable before (and without) it. Where the browser lets
+// a worker draw it (WorkerScene), the worker loads them; this copy is for the
+// browsers that can't.
 const Scene = lazy(() => import('./scene/Scene.jsx'));
 
 // Dev-only: ?inspect=<0-4> swaps the whole app for a single machine on a lit
@@ -41,6 +44,11 @@ export default function App() {
   const tier = useDeviceTier();
   const [sceneFailed, setSceneFailed] = useState(false);
   const onSceneFail = useCallback(() => setSceneFailed(true), []);
+  // Where the scene draws: in a worker of its own where the browser can
+  // (WorkerScene), else here on the main thread. A worker that turns out not
+  // to manage it hands the scene back to the main thread for the visit.
+  const [inWorker, setInWorker] = useState(canDrawInWorker);
+  const onWorkerFallback = useCallback(() => setInWorker(false), []);
   // Which camera path the scene flies. This is an aspect question, not a width
   // one — three's `fov` is vertical, so only the aspect ratio decides how much
   // of the corridor fits sideways. The landscape keyframes hold every machine
@@ -98,6 +106,8 @@ export default function App() {
       <div className="canvas-wrap">
         {showFallback ? (
           <Fallback />
+        ) : inWorker ? (
+          <WorkerScene tier={tier} portrait={portrait} still={still} onFallback={onWorkerFallback} />
         ) : (
           <SceneBoundary onFail={onSceneFail}>
             <Suspense fallback={null}>
@@ -108,7 +118,6 @@ export default function App() {
       </div>
 
       <HUD />
-      <div className="grain" aria-hidden />
       <StructuredData />
     </div>
   );

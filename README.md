@@ -90,8 +90,9 @@ once in each browser you use.
 `src/hooks.js` picks a capability tier (`full` / `lite` / `flat`) from WebGL2
 support, core count and device memory; `flat` swaps the canvas for the static 2D
 backdrop in `src/ui/Fallback.jsx`, which is also what the topbar's ambient-motion
-toggle serves. `?tier=flat|lite|full` overrides it for testing, and
-`?inspect=<0-4>` opens a single machine on a lit turntable.
+toggle serves. `?tier=flat|lite|full` overrides it for testing,
+`?inspect=<0-4>` opens a single machine on a lit turntable, and `?worker=0`
+draws the scene on the page's main thread instead of in its worker.
 
 Which of the two camera paths in `src/data.js` the scene flies is an **aspect
 ratio** question, not a viewport-width one: three's `fov` is vertical, so only
@@ -106,6 +107,18 @@ than through them. If you move a keyframe or a machine, check that route again.
 
 ### Keeping it fast
 
+- **The scene draws in a worker.** The page hands its canvas to a worker of
+  its own (`src/scene/WorkerScene.jsx` on the page, `worker.js` and
+  `workerRoot.jsx` in the worker), so three.js never runs on the page's main
+  thread. Scrolling, the scroll handler and the page's layout don't wait on the
+  scene, and on a phone the two run side by side on separate cores. The worker
+  is a build of its own (the `w-` files, see `vite.config.js`) with its own
+  copy of three.js, which the page then never loads. Anything the scene needs
+  from the page (the scroll, the pointer, input, the tab's visibility, the
+  marks it puts on `.canvas-wrap`) goes through `src/scene/page.js`, so the
+  same scene code runs in either place. Where a worker can't draw WebGL
+  (Safari before 17), the page draws the scene itself, from the main-thread
+  copy. `?worker=0` forces that, for comparing the two.
 - **Static batching.** `StaticBatch` (`src/scene/batch.jsx`) merges every part
   of a machine, and of the corridor, that never moves into one mesh per
   material, once at load. That took the scene from 200–260 draw calls a frame
@@ -117,9 +130,22 @@ than through them. If you move a keyframe or a machine, check that route again.
   (`MACHINE_ELEMENTS`), and only the 2D backdrop reads the current section.
   Either one re-rendering in step with the scroll used to cost a long frame on
   phones.
-- **60fps cap.** `FrameDriver` in `Scene.jsx` asks for at most 60 frames a
-  second, so 90 and 120Hz phones don't draw the backdrop twice as often for no
-  visible gain. It also pauses everything while the tab is hidden.
+- **60fps cap, evenly paced.** `FrameDriver` in `Scene.jsx` asks for at most
+  60 frames a second, so 90 and 120Hz phones don't draw the backdrop twice as
+  often for no visible gain. The cap is counted in whole screen refreshes
+  (`src/scene/pacing.js`), so frames stay evenly spaced on any screen: 45 a
+  second on a 90Hz phone, where a plain 60 cap judders. It also pauses
+  everything while the tab is hidden.
+- **Nothing full-screen over the canvas.** The canvas changes every frame, so
+  the browser blends every page layer above it again every frame, at the
+  screen's full resolution. The scrims are painted by the scene itself in its
+  last glow pass (`Scrim` in `Scene.jsx`). The page's own copy
+  (`.canvas-wrap::after`) only shows before the first frame, behind the flat
+  backdrop, and if the glow passes go. A full-screen overlay, blend mode or
+  backdrop filter added over the scene costs every phone on every frame.
+- **One shader at a time.** Opaque surfaces are drawn grouped by shader
+  (`DrawOrder` in `Scene.jsx`), and hidden machines are skipped when three
+  places the scene each frame (`skipWhileHidden` in `stations.jsx`).
 - **Degrading gracefully.** If a device can't keep up, `PerformanceMonitor`
   lowers the render resolution in steps down to 0.7, and only drops the glow
   passes after that.

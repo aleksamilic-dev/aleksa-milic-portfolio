@@ -1,8 +1,9 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PerformanceMonitor, Sparkles } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, wrapEffect } from '@react-three/postprocessing';
+import { BlendFunction, Effect } from 'postprocessing';
 import { easing } from 'maath';
 import {
   CAMERA_KEYFRAMES,
@@ -28,6 +29,8 @@ import { Spine, SpineFlow } from './DataFlow.jsx';
 import { FlowClock, flow } from './flow.jsx';
 import { LATE, StaticBatch } from './batch.jsx';
 import { SUNLIT } from './daylight.js';
+import { createPacer } from './pacing.js';
+import { page } from './page.js';
 import { Stations } from './stations.jsx';
 
 const FACILITY_LENGTH = SPINE.startZ - SPINE.endZ + 12;
@@ -131,7 +134,6 @@ const STILL_FADE = 0.4; // s: long enough for the CSS fade out (0.35s) to finish
 
 function CameraRig({ pointer, keyframes, vias, wide, still, lead }) {
   const route = useRoute(keyframes, vias);
-  const gl = useThree((s) => s.gl);
   // Set up on the first frame: `u` is how far along the route the camera is,
   // `pos` and `aim` how far the push-in has brought its position and its look
   // from `wide` onto the route (1 once it's done), `intro` the push-in's clock.
@@ -147,7 +149,7 @@ function CameraRig({ pointer, keyframes, vias, wide, still, lead }) {
   const look = useMemo(() => new THREE.Vector3(), []);
 
   // the fade's mark comes off with the scene, like FadeIn's
-  useEffect(() => () => gl.domElement.closest('.canvas-wrap')?.removeAttribute('data-veil'), [gl]);
+  useEffect(() => () => page.mark('veil', false), []);
 
   useFrame((state, delta) => {
     // The first frame can come long after the clock started (it waits for
@@ -175,7 +177,7 @@ function CameraRig({ pointer, keyframes, vias, wide, still, lead }) {
       };
     }
     const r = ride.current;
-    const veil = (on) => gl.domElement.closest('.canvas-wrap')?.toggleAttribute('data-veil', on);
+    const veil = (on) => page.mark('veil', on);
     if (still) {
       if (r.fade < 0 && nearest !== r.stop && Math.abs(beat - r.stop) > STILL_SWITCH) {
         r.fade = 0;
@@ -227,9 +229,13 @@ function CameraRig({ pointer, keyframes, vias, wide, still, lead }) {
 
     // the point on the route, blended in from `wide` by the push-in. The look
     // target runs straight from one keyframe's to the next: it never needs
-    // to go round anything.
-    const i = Math.min(Math.floor(r.u), stops - 2);
-    const f = r.u - i;
+    // to go round anything. The damping can carry `u` a hair past either end
+    // of the route (back at the top, a little scroll down while it's still
+    // settling: -0.00005), which used to look up a stretch before the first
+    // and throw on every frame from then on, so it's held to the route here.
+    const u = Math.min(stops - 1, Math.max(0, r.u));
+    const i = Math.min(Math.floor(u), stops - 2);
+    const f = u - i;
     route.at(i, f, pos);
     pos.set(mix(wide.pos[0], pos.x, r.pos), mix(wide.pos[1], pos.y, r.pos), mix(wide.pos[2], pos.z, r.pos));
     const a = keyframes[i].look;
@@ -539,6 +545,39 @@ function Facility() {
 // as much as a big one. Five halvings, 10 passes.
 const GLOW_LEVELS = 5;
 
+// --- the scrims -------------------------------------------------------------
+// The wash over the scene, and the darker bands under the topbar and along
+// the bottom of the screen (.canvas-wrap::after in styles.css), painted in
+// the glow passes' last step. As page layers on top of the canvas they were
+// two more full-screen layers for the browser to blend into every frame, at
+// the screen's full resolution, because the canvas under them changes every
+// frame. Here they're a few sums per pixel in a pass that runs anyway, at the
+// canvas's own resolution. Same colour, same gradients (keep them matched
+// with styles.css), blended as the page blends: on the encoded colour, after
+// everything else the scene draws. ScrimMark tells the page when its own can
+// step aside.
+const SCRIM_GLSL = `
+const vec3 scrimColor = vec3(${[8, 11, 16].map((v) => (v / 255).toFixed(6)).join(', ')});
+void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
+  float y = 1.0 - uv.y; // down from the top, as the page measures
+  vec3 c = sRGBTransferOETF(vec4(clamp(inputColor.rgb, 0.0, 1.0), 1.0)).rgb;
+  // the wash: 0.32 at the top to 0.46 at the bottom
+  c = mix(c, scrimColor, 0.32 + 0.14 * y);
+  // the bottom band, 0.6 fading out over the last fifth of the screen
+  c = mix(c, scrimColor, 0.6 * max(0.0, 1.0 - (1.0 - y) / 0.2));
+  // the band under the topbar, 0.55 fading out over the top 16%
+  c = mix(c, scrimColor, 0.55 * max(0.0, 1.0 - y / 0.16));
+  outputColor = vec4(sRGBTransferEOTF(vec4(c, 1.0)).rgb, inputColor.a);
+}`;
+
+class ScrimEffect extends Effect {
+  constructor() {
+    super('ScrimEffect', SCRIM_GLSL, { blendFunction: BlendFunction.SRC });
+  }
+}
+
+const Scrim = wrapEffect(ScrimEffect, { blendFunction: BlendFunction.SRC });
+
 function Effects({ full }) {
   // multisampling handles edge AA and, importantly, sidesteps the
   // depth-blit warning postprocessing throws at multisampling={0}. 2x is
@@ -555,8 +594,53 @@ function Effects({ full }) {
         height={full ? 240 : 200}
       />
       <Vignette offset={0.3} darkness={0.55} eskil={false} />
+      <Scrim />
     </EffectComposer>
   );
+}
+
+// Tells the page whether the frame on the canvas carries the scrims, so the
+// page's own (.canvas-wrap::after) steps aside while it does: [data-scrim]
+// goes on with the first frame drawn with them, and off with the first one
+// drawn without them (the glow passes gone, see Quality). While drawing is
+// held, the canvas keeps the last frame it drew, and the mark stays with it.
+// From a worker the mark reaches the page a frame or so after the frame
+// itself. At the start that's while the canvas is still faded out.
+function ScrimMark({ on }) {
+  const marked = useRef(false);
+  useEffect(() => () => page.mark('scrim', false), []);
+  useFrame(() => {
+    if (marked.current === on) return;
+    marked.current = on;
+    page.mark('scrim', on);
+  });
+  return null;
+}
+
+// --- draw order ---------------------------------------------------------------
+// three draws the opaque surfaces grouped by material, then near to far. The
+// materials of one shader came out interleaved with another's, so the GPU
+// switched shaders back and forth: up to 31 switches a frame for 23 shaders,
+// and at each switch three sends that shader's lights and settings again.
+// Grouped by shader first, each is set up once a frame. The draw order the
+// scene asks for (renderOrder, LATE in batch.jsx) still comes first, and the
+// order among the rest doesn't change what shows: the depth test decides.
+function DrawOrder() {
+  const gl = useThree((s) => s.gl);
+  useLayoutEffect(() => {
+    const shader = (material) => gl.properties.get(material).currentProgram?.id ?? -1;
+    gl.setOpaqueSort(
+      (a, b) =>
+        a.groupOrder - b.groupOrder ||
+        a.renderOrder - b.renderOrder ||
+        shader(a.material) - shader(b.material) ||
+        a.material.id - b.material.id ||
+        a.z - b.z ||
+        a.id - b.id,
+    );
+    return () => gl.setOpaqueSort(null);
+  }, [gl]);
+  return null;
 }
 
 // The render loop. The canvas runs on demand and this draws a frame at most
@@ -564,7 +648,10 @@ function Effects({ full }) {
 // screens most phones have now, the browser runs its frame callbacks 90 or
 // 120 times a second, and the scene was drawing every one: up to twice the
 // GPU work and heat for a slow ambient backdrop that looks no different at
-// 60. The page itself still scrolls at the screen's full rate.
+// 60. The page itself still scrolls at the screen's full rate. The pace is
+// counted in whole refreshes of the screen (pacing.js), so frames come evenly
+// spaced whatever its rate: 45 a second on a 90 Hz screen, where a 60 cap
+// came out 11 and 22 ms apart by turns.
 //
 // It draws the frame itself (the root's `advance`), here in this callback.
 // Asking the canvas for one (`invalidate`) only starts the canvas's own loop
@@ -588,50 +675,44 @@ const IDLE_FRAME_MS = 1000 / 30;
 const IDLE_AFTER = 2500;
 const LONG_IDLE_FRAME_MS = 1000 / 15;
 const LONG_IDLE_AFTER = 60_000;
-const INPUTS = ['pointermove', 'pointerdown', 'wheel', 'touchstart', 'keydown'];
 
-// When the last frame was drawn at an idle pace. PerformanceMonitor would
-// read those 30 or 15 fps as a device that can't keep up and start cutting
-// quality, so Quality ignores what it reports for a while after (see
-// IDLE_BLIND_MS).
-const pace = { lastIdleFrame: -Infinity };
+// When the last frame was drawn at an idle pace, and how many frames a second
+// the full pace comes out at on this screen (60 on most, 45 at 90 Hz).
+// PerformanceMonitor would read the idle paces as a device that can't keep
+// up and start cutting quality, so Quality ignores what it reports for a
+// while after one (see IDLE_BLIND_MS), and judges the rest against `fps`.
+const pace = { lastIdleFrame: -Infinity, fps: 60 };
 
 function FrameDriver() {
   const get = useThree((s) => s.get);
   const clock = useThree((s) => s.clock);
   useEffect(() => {
     let raf = 0;
-    let next = 0;
     let lastInput = performance.now();
+    const pacer = createPacer();
     const loop = (t) => {
       raf = requestAnimationFrame(loop);
+      pacer.tick(t);
+      pace.fps = pacer.rate(FRAME_MS);
       const quiet = t - lastInput;
       const frameMs = quiet > LONG_IDLE_AFTER ? LONG_IDLE_FRAME_MS : quiet > IDLE_AFTER ? IDLE_FRAME_MS : FRAME_MS;
-      // 1.5ms of slack, so a 60Hz screen's jitter never skips a frame
-      if (t < next - 1.5) return;
-      // on time: the next slot is one frame on. Fallen behind (a stall, a
-      // return from the background): start counting again from now.
-      next = t - next > frameMs ? t + frameMs : next + frameMs;
+      if (!pacer.due(t, frameMs)) return;
       const state = get();
       // 'never' while nothing may be drawn: Warmup, or Quality's hold
       if (state.frameloop === 'never') return;
       if (frameMs !== FRAME_MS) pace.lastIdleFrame = t;
       state.advance(t);
     };
-    // input clears the slot too, so the first frame back isn't held to the
-    // idle pace
+    // input makes the next frame due at once, so the first frame back isn't
+    // held to the idle pace (what counts as input: page.js)
     const onInput = () => {
-      if (performance.now() - lastInput > IDLE_AFTER) next = 0;
+      if (performance.now() - lastInput > IDLE_AFTER) pacer.restart();
       lastInput = performance.now();
     };
-    const listen = { passive: true, capture: true };
-    INPUTS.forEach((type) => window.addEventListener(type, onInput, listen));
-    // the page scrolls inside .viewport, and scroll doesn't bubble, so it's
-    // caught on the way down
-    document.addEventListener('scroll', onInput, listen);
+    const stopInput = page.onInput(onInput);
     const onVis = () => {
       cancelAnimationFrame(raf);
-      if (document.hidden) {
+      if (page.hidden()) {
         clock.stop(); // holds elapsedTime where it is
       } else {
         // resume without THREE.Clock.start() — that would zero elapsedTime and
@@ -639,17 +720,16 @@ function FrameDriver() {
         // stale delta so the first frame back isn't a giant time step.
         clock.running = true;
         clock.oldTime = performance.now();
-        next = 0;
+        pacer.restart();
         raf = requestAnimationFrame(loop);
       }
     };
-    if (!document.hidden) raf = requestAnimationFrame(loop);
-    document.addEventListener('visibilitychange', onVis);
+    if (!page.hidden()) raf = requestAnimationFrame(loop);
+    const stopVis = page.onVisibility(onVis);
     return () => {
       cancelAnimationFrame(raf);
-      document.removeEventListener('visibilitychange', onVis);
-      INPUTS.forEach((type) => window.removeEventListener(type, onInput, listen));
-      document.removeEventListener('scroll', onInput, listen);
+      stopVis();
+      stopInput();
     };
   }, [get, clock]);
   return null;
@@ -711,16 +791,12 @@ async function compileScene(gl, scene, camera, offscreen) {
 // mark comes off again with the scene, so motion switched back on in the
 // topbar fades in too.
 function FadeIn() {
-  const gl = useThree((s) => s.gl);
   const shown = useRef(false);
-  useEffect(() => {
-    const wrap = gl.domElement.closest('.canvas-wrap');
-    return () => wrap?.removeAttribute('data-shown');
-  }, [gl]);
+  useEffect(() => () => page.mark('shown', false), []);
   useFrame(() => {
     if (shown.current) return;
     shown.current = true;
-    gl.domElement.closest('.canvas-wrap')?.setAttribute('data-shown', '');
+    page.mark('shown', true);
   });
   return null;
 }
@@ -786,7 +862,7 @@ function ContextRestore({ onRestore }) {
 }
 
 // If a device can't hold its frame rate, give up resolution first, in small
-// steps: the canvas sits behind scrims, vignette and grain, so a softer image
+// steps: the scene sits behind scrims and a vignette, so a softer image
 // barely shows. The glow is what makes the machines read, so it only goes
 // once the resolution is at its floor and the frame rate still isn't there.
 // (It used to go on the first slow patch.)
@@ -808,6 +884,13 @@ const DPR_FLOOR = 0.7;
 // samples, drei's defaults). A judgement that took in any frames drawn at the
 // idle pace (FrameDriver) says nothing about the device, so it's ignored.
 const IDLE_BLIND_MS = 3000;
+
+// What PerformanceMonitor counts as falling behind: under two thirds of the
+// pace frames are drawn at, and as keeping up: all of it. drei's own default
+// is 40 and 60 below 100 fps, which is the same thing on a 60 Hz screen, but
+// on a 90 Hz one the pace is 45 (FrameDriver), and judged against 60 it would
+// have read a device holding its pace as one barely keeping up.
+const judgeAgainstPace = () => [(pace.fps * 2) / 3, pace.fps];
 
 function Quality({ fx, setFx, setDpr, held, setHeld }) {
   const gl = useThree((s) => s.gl);
@@ -831,6 +914,7 @@ function Quality({ fx, setFx, setDpr, held, setHeld }) {
 
   return (
     <PerformanceMonitor
+      bounds={judgeAgainstPace}
       onDecline={() => {
         if (performance.now() - pace.lastIdleFrame < IDLE_BLIND_MS) return;
         if (dprNow.current > DPR_FLOOR) {
@@ -845,13 +929,41 @@ function Quality({ fx, setFx, setDpr, held, setHeld }) {
   );
 }
 
-export default function Scene({ tier, portrait = false, still = false }) {
-  const pointer = usePointer();
-  // start optimistic, let PerformanceMonitor walk quality down if the GPU
-  // can't keep up — smoother than shipping a permanently heavy scene.
-  // The canvas is a dim backdrop behind a scrim, fog, vignette and grain — it
-  // renders at CSS resolution (dpr 1) even on HiDPI. PerformanceMonitor can
-  // still walk it down further on weak GPUs.
+// --- the two hosts ------------------------------------------------------------
+// Where the browser lets it, the scene draws in a worker of its own
+// (WorkerScene.jsx starts it, workerRoot.jsx hosts it there), so it never
+// waits on the page's main thread, nor the page on it. Where it doesn't
+// (Safari before 17), the scene draws here on the main thread, in Scene
+// below. Either way it's the same scene, SceneContents, with the same state
+// round it, useSceneState: what the canvas used to be given as props.
+
+// The renderer's settings.
+export const GL_SETTINGS = {
+  antialias: false,
+  powerPreference: 'high-performance',
+  toneMappingExposure: 1.1,
+  stencil: false,
+};
+
+// The camera, as it's made at the start: portrait sees a much narrower
+// horizontal slice, so widen the lens and hold the far plane closer in (the
+// corridor is only ~80 deep). It isn't made again when the page turns between
+// portrait and landscape: its route changes (CameraRig), its lens stays.
+export const cameraFor = (portrait) => ({
+  position: (portrait ? CAMERA_WIDE_PORTRAIT : CAMERA_WIDE).pos,
+  fov: portrait ? 62 : 54,
+  near: 0.1,
+  far: portrait ? 90 : 130,
+});
+
+// What either host keeps for the canvas: its resolution, whether it may
+// draw, whether the glow passes are on, and how many times the context has
+// come back. Start optimistic, let PerformanceMonitor walk quality down if the
+// GPU can't keep up — smoother than shipping a permanently heavy scene. The
+// canvas is a dim backdrop behind scrims, fog and a vignette — it renders at
+// CSS resolution (dpr 1) even on HiDPI. PerformanceMonitor can still walk it
+// down further on weak GPUs.
+export function useSceneState() {
   const [dpr, setDpr] = useState(1);
   const [fx, setFx] = useState(true);
   // nothing is drawn until every shader is compiled (Warmup), or while the
@@ -865,7 +977,14 @@ export default function Scene({ tier, portrait = false, still = false }) {
     setReady(false);
     setRestored((n) => n + 1);
   }, []);
+  const frameloop = ready && !held ? 'demand' : 'never';
+  return { dpr, setDpr, frameloop, fx, setFx, held, setHeld, markReady, restored, onRestore };
+}
 
+// Everything on the canvas. `pointer` is where the pointer is, for the
+// parallax (usePointer in hooks.js, or the page's messages in a worker).
+export function SceneContents({ tier, portrait = false, still = false, pointer, state }) {
+  const { fx, setFx, setDpr, held, setHeld, markReady, restored, onRestore } = state;
   const wide = portrait ? CAMERA_WIDE_PORTRAIT : CAMERA_WIDE;
   const keyframes = portrait ? CAMERA_KEYFRAMES_PORTRAIT : CAMERA_KEYFRAMES;
   const vias = portrait ? CAMERA_VIAS_PORTRAIT : CAMERA_VIAS;
@@ -906,24 +1025,7 @@ export default function Scene({ tier, portrait = false, still = false }) {
   );
 
   return (
-    <Canvas
-      dpr={dpr}
-      frameloop={ready && !held ? 'demand' : 'never'}
-      gl={{
-        antialias: false,
-        powerPreference: 'high-performance',
-        toneMappingExposure: 1.1,
-        stencil: false,
-      }}
-      // portrait sees a much narrower horizontal slice — widen the lens and
-      // hold the far plane closer in (the corridor is only ~80 deep)
-      camera={{
-        position: wide.pos,
-        fov: portrait ? 62 : 54,
-        near: 0.1,
-        far: portrait ? 90 : 130,
-      }}
-    >
+    <>
       {/* first, so the factory clock has advanced before anything reads it */}
       <FlowClock />
       <FrameDriver />
@@ -958,11 +1060,24 @@ export default function Scene({ tier, portrait = false, still = false }) {
         lead={portrait ? CAMERA_LEAD_IN_PORTRAIT : CAMERA_LEAD_IN}
       />
       {fx && <Effects full={tier === 'full'} />}
+      <ScrimMark on={fx} />
+      <DrawOrder />
       <FadeIn />
 
       {world}
       {/* after the world, like the first, so it compiles all of it */}
       {restored > 0 && <Warmup key={restored} onReady={markReady} offscreen={fx} />}
+    </>
+  );
+}
+
+// The scene on the main thread, for browsers whose workers can't draw it.
+export default function Scene({ tier, portrait = false, still = false }) {
+  const pointer = usePointer();
+  const state = useSceneState();
+  return (
+    <Canvas dpr={state.dpr} frameloop={state.frameloop} gl={GL_SETTINGS} camera={cameraFor(portrait)}>
+      <SceneContents tier={tier} portrait={portrait} still={still} pointer={pointer} state={state} />
     </Canvas>
   );
 }

@@ -104,19 +104,21 @@ function TopBar() {
   );
 }
 
-// Writes progress as a custom property rather than a transform, so the two
-// orientations of the rail can each pick their own axis in CSS: the desktop
-// rail runs down the right edge (scaleY), the phone rail runs across under the
-// topbar (scaleX). Still a direct style write per frame — no React render.
+// Writes progress as a custom property, which styles.css turns into the
+// fill's height. A direct style write per scroll frame, no React render. Only
+// while the rail is on screen: phones hide it (styles.css, under 721px), and
+// writing to it anyway cost a style pass on every scroll frame there.
 function RailFill() {
   const ref = useRef();
-  useEffect(
-    () =>
-      useFactory.subscribe((s) => {
-        if (ref.current) ref.current.style.setProperty('--p', s.progress);
-      }),
-    [],
-  );
+  const hidden = useMediaQuery('(max-width: 720px)');
+  useEffect(() => {
+    if (hidden) return undefined;
+    const write = (progress) => ref.current?.style.setProperty('--p', progress);
+    write(useFactory.getState().progress);
+    return useFactory.subscribe((s, prev) => {
+      if (s.progress !== prev.progress) write(s.progress);
+    });
+  }, [hidden]);
   return (
     <span className="rail__track">
       <span ref={ref} className="rail__fill" />
@@ -689,14 +691,14 @@ export default function HUD() {
   const setScroll = useFactory((s) => s.setScroll);
   const viewport = useRef();
   const ticking = useRef(false);
-  const pending = useRef([]); // [data-reveal] elements not yet shown
   const knots = useRef(null); // where each machine sits in the scroll (beats.js)
 
-  // One rAF-throttled pass per scroll handles both jobs: the 0..1 progress
-  // for the rail fill and the scene, and revealing any [data-reveal] that has
-  // entered the lower viewport. Doing reveals here (rather than via
-  // IntersectionObserver) means a fast fling can't skip an element — anything
-  // scrolled past just reads as top < threshold and gets shown.
+  // One rAF-throttled pass per scroll: the 0..1 progress for the rail fill
+  // and the scene. It only reads the scroll position, which the browser has
+  // ready, so it never makes the browser work out the page's layout again in
+  // the middle of a frame. It used to measure every element still waiting to
+  // fade in too, and that forced a layout pass on every scroll frame. The
+  // reveals are watched instead (below).
   const sample = () => {
     const el = viewport.current;
     if (!el) return;
@@ -704,17 +706,6 @@ export default function HUD() {
     const max = el.scrollHeight - el.clientHeight;
     const progress = max > 0 ? el.scrollTop / max : 0;
     setScroll(progress, beatAt(progress, knots.current));
-
-    const trigger = el.clientHeight * 0.92;
-    if (pending.current.length) {
-      pending.current = pending.current.filter((node) => {
-        if (node.getBoundingClientRect().top < trigger) {
-          node.classList.add('in-view');
-          return false;
-        }
-        return true;
-      });
-    }
   };
 
   const onScroll = () => {
@@ -726,8 +717,6 @@ export default function HUD() {
     });
   };
 
-  // Track the section in view for the nav + rail. The middle-band rootMargin
-  // means a fast scroll can at worst leave this briefly stale, never stuck.
   // A layout effect so the first reveal pass lands before the new tree paints:
   // when it replaces the prerendered page, a paint in between would show the
   // hero at opacity 0 for a frame.
@@ -743,32 +732,53 @@ export default function HUD() {
       root.focus({ preventScroll: true });
     }
 
-    pending.current = [...root.querySelectorAll('[data-reveal]')];
     knots.current = measureKnots(root);
-    if (document.documentElement.hasAttribute('data-swap')) {
-      // Mounting over the prerendered page (main.jsx): what's on screen was
-      // already showing, so reveal it with transitions off. Reading layout
-      // settles those styles before the class comes off again.
-      root.classList.add('is-swapping');
-      sample();
+    sample();
+
+    // [data-reveal] fades an element in once its top comes up past 92% of the
+    // screen. What's past that already at mount goes at once. When this tree
+    // replaces the prerendered page (main.jsx), that was showing already, so
+    // it goes with transitions off. Reading layout settles those styles
+    // before the class comes off again.
+    const trigger = root.clientHeight * 0.92;
+    const swapping = document.documentElement.hasAttribute('data-swap');
+    if (swapping) root.classList.add('is-swapping');
+    const pending = [...root.querySelectorAll('[data-reveal]')].filter((node) => {
+      if (node.getBoundingClientRect().top >= trigger) return true;
+      node.classList.add('in-view');
+      return false;
+    });
+    if (swapping) {
       void root.offsetHeight;
       root.classList.remove('is-swapping');
-    } else {
-      sample(); // reveal whatever is on-screen at load
     }
 
     if (!('IntersectionObserver' in window)) {
-      pending.current.forEach((r) => r.classList.add('in-view'));
-      pending.current = [];
+      pending.forEach((r) => r.classList.add('in-view'));
       return;
     }
 
-    // On a cold load the viewport can still be 0-height when this effect
-    // runs — that zeroes the reveal threshold in sample(), so the first
-    // screen (hero + profile card) stays hidden until the visitor scrolls.
-    // Re-sample once it has a real height, and on any later resize. The
-    // sections are watched too: when an embed settles on its height or a
-    // font loads, the machines' places in the scroll move with the page.
+    // The rest are watched rather than measured. The band they're watched in
+    // reaches from the trigger line to a hundred screens above, further than
+    // the page goes, so anything a fast fling carries straight past the
+    // screen is in it too and still fades in. It also catches a cold load,
+    // where the viewport can still be 0-height at this point: the first
+    // screen fades in as soon as it has a height.
+    const revealer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add('in-view');
+          revealer.unobserve(entry.target);
+        }
+      },
+      { root, rootMargin: '10000% 0px -8% 0px' },
+    );
+    pending.forEach((node) => revealer.observe(node));
+
+    // Measured again on any resize, and when a section changes size: when an
+    // embed settles on its height or a font loads, the machines' places in
+    // the scroll move with the page.
     const sections = [...root.querySelectorAll('.section')];
     const resizeObserver = new ResizeObserver(() => {
       knots.current = measureKnots(root);
@@ -777,6 +787,8 @@ export default function HUD() {
     resizeObserver.observe(root);
     sections.forEach((s) => resizeObserver.observe(s));
 
+    // Track the section in view for the nav + rail. The middle-band rootMargin
+    // means a fast scroll can at worst leave this briefly stale, never stuck.
     const sectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -790,6 +802,7 @@ export default function HUD() {
     sections.forEach((s) => sectionObserver.observe(s));
 
     return () => {
+      revealer.disconnect();
       resizeObserver.disconnect();
       sectionObserver.disconnect();
     };

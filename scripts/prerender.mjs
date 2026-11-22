@@ -38,31 +38,47 @@ async function firstScreenFontPreloads() {
 }
 
 // The 3D's code: three.js, r3f and drei, the glow passes, and the scene's
-// own chunks, about 270 kB compressed. The page asks for it once its own
+// own chunks, about 290 kB compressed. The page asks for it once its own
 // script has run and React has mounted, which on a slow connection left that
 // download to start a second or so after the page itself. This starts it as
 // the page arrives, at low priority so the stylesheet, the fonts and the
 // page's script go first.
 //
+// There are two copies of it. Where the page can hand its canvas to a worker
+// (WorkerScene.jsx), the scene's worker loads its own (the w- files, a build
+// of their own, see vite.config.js), and this warms the cache it fetches
+// from. Elsewhere the page draws the scene itself, from the other copy.
+//
 // Only where the scene will run, so the devices that get the flat backdrop
 // don't download it for nothing: the same checks as useDeviceTier
-// (hooks.js), the motion toggle (store.js) and the ?tier and ?inspect test
-// switches (App.jsx).
-const SCENE_CHUNKS = [/^three-.+\.js$/, /^r3f-.+\.js$/, /^postfx-.+\.js$/, /^Scene-.+\.js$/, /^stations-.+\.js$/];
+// (hooks.js), the motion toggle (store.js) and the ?tier, ?inspect and
+// ?worker test switches (App.jsx, WorkerScene.jsx).
+const WORKER_CHUNKS = [/^w-scene-.+\.js$/, /^w-workerRoot-.+\.js$/, /^w-three-.+\.js$/, /^w-r3f-.+\.js$/, /^w-postfx-.+\.js$/];
+const MAIN_CHUNKS = [/^three-.+\.js$/, /^r3f-.+\.js$/, /^postfx-.+\.js$/, /^Scene-.+\.js$/, /^stations-.+\.js$/];
 
 async function scenePreload() {
   const files = await readdir(resolve('docs/assets')).catch(() => []);
-  const chunks = SCENE_CHUNKS.map((pattern) => files.find((f) => pattern.test(f))).filter(Boolean);
-  if (chunks.length !== SCENE_CHUNKS.length) return '';
+  const pick = (patterns) => {
+    const found = patterns.map((pattern) => files.find((f) => pattern.test(f))).filter(Boolean);
+    return found.length === patterns.length ? found : null;
+  };
+  const inWorker = pick(WORKER_CHUNKS);
+  const onMain = pick(MAIN_CHUNKS);
+  if (!inWorker || !onMain) return '';
   return `<script>
       (function () {
+        var q = null;
         try {
-          var q = new URLSearchParams(location.search);
+          q = new URLSearchParams(location.search);
           if (q.get('tier') === 'flat' || q.has('inspect') || localStorage.getItem('motion') === 'reduced') return;
         } catch (e) {}
         if (typeof WebGL2RenderingContext === 'undefined') return;
         if ((navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2) return;
-        ${JSON.stringify(chunks)}.forEach(function (file) {
+        var inWorker =
+          !(q && q.get('worker') === '0') &&
+          typeof Worker === 'function' &&
+          'transferControlToOffscreen' in HTMLCanvasElement.prototype;
+        (inWorker ? ${JSON.stringify(inWorker)} : ${JSON.stringify(onMain)}).forEach(function (file) {
           var link = document.createElement('link');
           link.rel = 'modulepreload';
           link.href = '/assets/' + file;
@@ -113,10 +129,13 @@ try {
 
     const html = await page.evaluate(() => {
       // Strip the live 3D so the static file is just the readable HUD, along
-      // with the mark that fades it in once drawn (FadeIn in scene/Scene.jsx).
+      // with the marks that fade it in once drawn and that say it draws the
+      // scrims itself (FadeIn and ScrimMark in scene/Scene.jsx): the static
+      // page needs the page's own scrims.
       document.querySelector('.app')?.setAttribute('data-tier', 'full');
       document.querySelector('.canvas-wrap')?.replaceChildren();
       document.querySelector('.canvas-wrap')?.removeAttribute('data-shown');
+      document.querySelector('.canvas-wrap')?.removeAttribute('data-scrim');
       // Drop the motion attribute: baking this browser's answer in would tell
       // a reduce-motion visitor reading the static HTML (JS off, or before the
       // mount) that motion is fine. Absent, styles.css falls back to the OS

@@ -1895,11 +1895,25 @@ function usePoolTexture() {
   }, []);
 }
 
+// Each frame three works out where every object in the scene is, hidden or
+// not, from the top down. A hidden machine is left out of that until it
+// shows again (a ref callback, so it's set on the group once). Then its own
+// transform is worked out afresh, as every frame, and that brings every part
+// below it up to date in the same pass, including any an animation turned
+// meanwhile.
+function skipWhileHidden(group) {
+  if (!group || Object.prototype.hasOwnProperty.call(group, 'updateMatrixWorld')) return;
+  group.updateMatrixWorld = function (force) {
+    if (this.visible) THREE.Group.prototype.updateMatrixWorld.call(this, force);
+  };
+}
+
 export function Stations() {
   // All five machines mount once, at load (with Warmup in Scene.jsx compiling
   // their shaders then) — building one mid-scroll cost a ~400ms frame. Only the
   // focused machine and its neighbours are drawn (`visible`); the rest sit
-  // hidden, which costs nothing to render. Only the machine in focus floats,
+  // hidden, which costs nothing to render, and nothing to place either
+  // (skipWhileHidden). Only the machine in focus floats,
   // and never the shipping dock: it's built into the hall's end wall
   // (scene/hall.jsx), and swaying, its gate frame shifted against the wall.
   const focus = useFactory((s) => Math.round(s.beat));
@@ -1909,7 +1923,7 @@ export function Stations() {
       {MACHINES.map((machine, i) => {
         const dist = Math.abs(i - focus);
         return (
-          <group key={machine.id} position={[0, 0, machine.z]} visible={dist <= 1}>
+          <group key={machine.id} ref={skipWhileHidden} position={[0, 0, machine.z]} visible={dist <= 1}>
             <Float
               enabled={dist === 0 && i !== BUILT_IN}
               speed={0.7}
